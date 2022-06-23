@@ -34,6 +34,16 @@ namespace LocationAPI
             });
 
             services.AddHealthChecks();
+
+            services.AddOpenTelemetryTracing(builder =>
+            {
+                builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(this.Configuration.GetValue<string>("Otlp:ServiceName")))
+                .AddHttpClientInstrumentation()
+                .AddAspNetCoreInstrumentation()
+                .AddSource("APITracing")
+                .AddConsoleExporter()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(this.Configuration.GetValue<string>("Otlp:Endpoint")));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

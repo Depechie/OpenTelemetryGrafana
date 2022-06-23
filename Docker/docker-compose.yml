@@ -44,6 +44,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - /Volumes/techorama2022/grafana/grafana.ini:/etc/grafana/grafana.ini
       - /Volumes/techorama2022/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
       - /Volumes/techorama2022/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
     restart: unless-stopped
@@ -51,6 +52,8 @@ services:
       - 3001:3000
     depends_on:
       - prometheus
+      - tempo
+      - loki      
     networks:
       techorama2022:
         ipv4_address: 172.60.0.4
@@ -72,6 +75,37 @@ services:
     networks:
       techorama2022:
         ipv4_address: 172.60.0.5
+
+  tempo:
+    # https://github.com/grafana/tempo/releases
+    image: grafana/tempo:1.4.1
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /Volumes/techorama2022/tempo.yml:/etc/tempo.yaml
+    restart: unless-stopped
+    ports:
+      - 3200:3200  # tempo
+      - 4007:4317  # otlp grpc
+    networks:
+      techorama2022:
+        ipv4_address: 172.60.0.6
+
+  loki:
+    # https://github.com/grafana/loki/releases
+    image: grafana/loki:2.5.0
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - /etc/localtime:/etc/localtime:ro      
+      - /Volumes/techorama2022/loki.yml:/etc/loki/local-config.yaml
+    restart: unless-stopped
+    ports:
+      - 3100:3100
+    networks:
+      techorama2022:
+        ipv4_address: 172.60.0.7
 
 networks:
   techorama2022:

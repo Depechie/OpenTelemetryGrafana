@@ -39,6 +39,16 @@ namespace WeatherAPI
                 .AddUrlGroup(new Uri("https://localhost:5501/health"), name: "Location API");
 
             services.AddHttpClient<ILocationService, LocationService>();
+
+            services.AddOpenTelemetryTracing(builder =>
+            {
+                builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(this.Configuration.GetValue<string>("Otlp:ServiceName")))
+                .AddHttpClientInstrumentation()
+                .AddAspNetCoreInstrumentation()
+                .AddSource("APITracing")
+                .AddConsoleExporter()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(this.Configuration.GetValue<string>("Otlp:Endpoint")));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
