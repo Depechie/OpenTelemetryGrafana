@@ -107,6 +107,18 @@ services:
       techorama2022:
         ipv4_address: 172.60.0.7
 
+  rabbitmq:
+    # https://github.com/docker-library/rabbitmq
+    image: rabbitmq:3.10.5-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      techorama2022:
+        ipv4_address: 172.60.0.8
+
 networks:
   techorama2022:
     ipam:

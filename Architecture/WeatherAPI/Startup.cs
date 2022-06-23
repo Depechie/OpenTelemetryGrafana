@@ -19,12 +19,12 @@ namespace WeatherAPI
 {
     public class Startup
     {
+        public IConfiguration Configuration { get; }
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -43,8 +43,8 @@ namespace WeatherAPI
             services.AddOpenTelemetryTracing(builder =>
             {
                 builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(this.Configuration.GetValue<string>("Otlp:ServiceName")))
-                .AddHttpClientInstrumentation()
                 .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
                 .AddSource("APITracing")
                 .AddConsoleExporter()
                 .AddOtlpExporter(options => options.Endpoint = new Uri(this.Configuration.GetValue<string>("Otlp:Endpoint")));

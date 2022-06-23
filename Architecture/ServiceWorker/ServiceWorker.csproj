@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="RabbitMQ.Client" />
+    <None Remove="Microsoft.Extensions.DependencyInjection" />
+    <None Remove="Microsoft.Extensions.Hosting" />
+    <None Remove="OpenTelemetry" />
+    <None Remove="OpenTelemetry.Extensions.Hosting" />
+    <None Remove="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <None Remove="Microsoft.Extensions.Configuration" />
+    <None Remove="appsettings.json" />
+    <None Remove="Serilog.AspNetCore" />
+    <None Remove="Serilog.Sinks.Console" />
+    <None Remove="Serilog.Sinks.Grafana.Loki" />
+    <None Remove="Serilog.Enrichers.Span" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+    <PackageReference Include="OpenTelemetry" Version="1.3.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc9" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
+    <PackageReference Include="Serilog.Sinks.Grafana.Loki" Version="7.1.1" />
+    <PackageReference Include="Serilog.Enrichers.Span" Version="2.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QueueCommon\QueueCommon.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>
