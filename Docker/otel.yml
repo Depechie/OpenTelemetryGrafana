@@ -1,0 +1,20 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  prometheus:
+    endpoint: otel:8889
+
+extensions:
+  zpages:
+     endpoint: otel:55679
+
+service:
+  extensions: [zpages]  # Enable zpages
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
