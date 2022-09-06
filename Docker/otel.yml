@@ -7,6 +7,10 @@ receivers:
 exporters:
   prometheus:
     endpoint: otel:8889
+  otlp:
+    endpoint: tempo:4007
+    tls:
+      insecure: true    
 
 extensions:
   zpages:
@@ -18,3 +22,6 @@ service:
     metrics:
       receivers: [otlp]
       exporters: [prometheus]
+    traces:
+      receivers: [otlp]
+      exporters: [otlp]      
