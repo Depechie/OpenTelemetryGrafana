@@ -1,0 +1,15 @@
+#https://grafana.com/docs/grafana/latest/administration/provisioning/
+apiVersion: 1
+
+datasources:
+- name: Prometheus
+  type: prometheus
+  uid: prometheus
+  access: proxy
+  url: http://prometheus:9090
+  jsonData:
+    timeInterval: 10s
+  basicAuth: false
+  isDefault: true
+  version: 1
+  editable: false

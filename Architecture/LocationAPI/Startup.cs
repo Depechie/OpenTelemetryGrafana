@@ -46,7 +46,7 @@ namespace LocationAPI
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "OpenTelemetryGrafana v1"));
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection(); //Disable http to https redirect for local testing BlackBox
             app.UseRouting();
             app.UseAuthorization();
             app.UseSerilogRequestLogging();
