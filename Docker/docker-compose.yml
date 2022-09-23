@@ -1,5 +1,3 @@
-version: '3.2'
-
 services:
   blackbox:
     # https://github.com/prometheus/blackbox_exporter/releases
