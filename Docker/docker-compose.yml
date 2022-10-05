@@ -25,6 +25,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /Volumes/techorama2022/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /Volumes/techorama2022/prometheus:/prometheus
     depends_on:
       - blackbox
     networks:
