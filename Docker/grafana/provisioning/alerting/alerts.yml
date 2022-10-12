@@ -1,0 +1,109 @@
+# config file version
+apiVersion: 1
+
+# List of rule groups to import or update
+groups:
+  # <int> organization ID, default = 1
+  - orgId: 1
+    # <string, required> name of the rule group
+    name: Uptime group
+    # <string, required> name of the folder the rule group will be stored in
+    folder: Alerts
+    # <duration, required> interval that the rule group should evaluated at
+    interval: 10s
+    # <list, required> list of rules that are part of the rule group
+    rules:
+    - uid: Z79YyvS4k
+      folderUID: Gb-fEDS4k
+      ruleGroup: Uptime group
+      title: Service uptime
+      condition: C
+      data:
+      - refId: A
+        queryType: ''
+        relativeTimeRange:
+          from: 600
+          to: 0
+        datasourceUid: prometheus
+        model:
+          editorMode: code
+          expr: probe_success{}
+          hide: false
+          intervalMs: 1000
+          legendFormat: __auto
+          maxDataPoints: 43200
+          range: true
+          refId: A
+      - refId: B
+        queryType: ''
+        relativeTimeRange:
+          from: 0
+          to: 0
+        datasourceUid: "-100"
+        model:
+          conditions:
+          - evaluator:
+              params:
+              - 3
+              type: gt
+            operator:
+              type: and
+            query:
+              params:
+              - A
+            reducer:
+              params: []
+              type: last
+            type: query
+          datasource:
+            type: __expr__
+            uid: "-100"
+          expression: A
+          hide: false
+          intervalMs: 1000
+          maxDataPoints: 43200
+          reducer: last
+          refId: B
+          settings:
+            mode: ''
+          type: reduce
+      - refId: C
+        queryType: ''
+        relativeTimeRange:
+          from: 0
+          to: 0
+        datasourceUid: "-100"
+        model:
+          conditions:
+          - evaluator:
+              params:
+              - 0
+              - 0
+              type: gt
+            operator:
+              type: and
+            query:
+              params:
+              - B
+            reducer:
+              params: []
+              type: avg
+            type: query
+          datasource:
+            name: Expression
+            type: __expr__
+            uid: __expr__
+          expression: "$B < 1"
+          hide: false
+          intervalMs: 1000
+          maxDataPoints: 43200
+          refId: C
+          type: math
+      updated: '2022-10-12T22:57:34+02:00'
+      noDataState: NoData
+      execErrState: Error
+      for: 30s
+      annotations:
+        summary: Service {{ $labels.instance }} is down
+      labels:
+        type: uptime
