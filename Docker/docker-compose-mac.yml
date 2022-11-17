@@ -50,7 +50,7 @@ services:
   
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:2.6.1
+    image: grafana/loki:2.7.0
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -65,7 +65,7 @@ services:
 
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:9.2.4
+    image: grafana/grafana:9.2.5
     container_name: grafana
     #command:
     environment:
@@ -91,7 +91,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.63.1
+    image: otel/opentelemetry-collector-contrib:0.64.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - /Volumes/otel/otel.yml:/etc/otel-collector-config.yaml
