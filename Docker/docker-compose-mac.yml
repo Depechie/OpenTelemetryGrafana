@@ -76,7 +76,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ${PWD}/grafana/grafana.ini:/etc/grafana/grafana.ini
       - grafana-data:/var/lib/grafana
-      - grafana-provisioning:/etc/grafana/provisioning
+      - ${PWD}/grafana/provisioning:/etc/grafana/provisioning
     restart: unless-stopped
     ports:
       - 3001:3000
@@ -117,9 +117,9 @@ services:
 
 networks:
   otel:
+
 volumes:
   loki:
   prometheus:
   tempo:
   grafana-data:
-  grafana-provisioning:
