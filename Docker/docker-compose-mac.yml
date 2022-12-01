@@ -8,7 +8,7 @@ services:
       - 9115:9115
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /Volumes/otel/blackbox.yml:/etc/blackbox/blackbox.yml
+      - ${PWD}/blackbox.yml:/etc/blackbox/blackbox.yml
     command: --config.file=/etc/blackbox/blackbox.yml
     networks:
       otel:
@@ -23,8 +23,8 @@ services:
       - 9090:9090
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /Volumes/otel/prometheus.yml:/etc/prometheus/prometheus.yml
-      - /Volumes/otel/prometheus:/prometheus
+      - ${PWD}/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus:/prometheus
     depends_on:
       - blackbox
     networks:
@@ -37,8 +37,8 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /Volumes/otel/tempo.yml:/etc/tempo.yaml
-      - /Volumes/otel/tempo:/tmp/tempo
+      - ${PWD}/tempo.yml:/etc/tempo.yaml
+      - tempo:/tmp/tempo
     restart: unless-stopped
     ports:
       - 3200:3200  # tempo
@@ -55,8 +55,8 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - /etc/localtime:/etc/localtime:ro      
-      - /Volumes/otel/loki.yml:/etc/loki/local-config.yaml
-      - /Volumes/otel/loki:/data/loki
+      - ${PWD}/loki.yml:/etc/loki/local-config.yaml
+      - loki:/data/loki
     restart: unless-stopped
     ports:
       - 3100:3100
@@ -74,9 +74,9 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /Volumes/otel/grafana/grafana.ini:/etc/grafana/grafana.ini
-      - /Volumes/otel/grafana/data:/var/lib/grafana
-      - /Volumes/otel/grafana/provisioning:/etc/grafana/provisioning
+      - ${PWD}/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - grafana-data:/var/lib/grafana
+      - ${PWD}/grafana/provisioning:/etc/grafana/provisioning
     restart: unless-stopped
     ports:
       - 3001:3000
@@ -94,7 +94,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.64.1
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
-      - /Volumes/otel/otel.yml:/etc/otel-collector-config.yaml
+      - ${PWD}/otel.yml:/etc/otel-collector-config.yaml
     restart: unless-stopped
     ports:
       - "8888:8888"   # Prometheus metrics exposed by the collector
@@ -117,3 +117,9 @@ services:
 
 networks:
   otel:
+
+volumes:
+  loki:
+  prometheus:
+  tempo:
+  grafana-data:
