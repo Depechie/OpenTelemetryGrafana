@@ -1,7 +1,7 @@
 services:
   blackbox:
     # https://github.com/prometheus/blackbox_exporter/releases
-    image: prom/blackbox-exporter:v0.22.0
+    image: prom/blackbox-exporter:v0.23.0
     container_name: blackbox
     restart: unless-stopped
     ports:
@@ -15,7 +15,7 @@ services:
 
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.40.4
+    image: prom/prometheus:v2.40.7
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -50,7 +50,7 @@ services:
   
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:2.7.0
+    image: grafana/loki:2.7.1
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -65,7 +65,7 @@ services:
 
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:9.3.0
+    image: grafana/grafana:9.3.2
     container_name: grafana
     #command:
     environment:
