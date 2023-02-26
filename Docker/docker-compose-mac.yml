@@ -32,7 +32,7 @@ services:
 
   tempo:
     # https://github.com/grafana/tempo/releases
-    image: grafana/tempo:1.5.0
+    image: grafana/tempo:2.0.0
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
@@ -50,7 +50,7 @@ services:
   
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:2.7.3
+    image: grafana/loki:2.7.4
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -91,7 +91,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.70.0
+    image: otel/opentelemetry-collector-contrib:0.72.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ${PWD}/otel.yml:/etc/otel-collector-config.yaml
