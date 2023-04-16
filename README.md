@@ -15,3 +15,10 @@ This repository is a work in progress, about having an observability stack for y
 ### Remarks:
 
 For alert provisioning we can extract the JSON through use of the Grafana API: [https://grafana.com/docs/grafana/latest/developers/http_api/alerting_provisioning/](https://grafana.com/docs/grafana/latest/developers/http_api/alerting_provisioning/)
+
+### Usage:
+
+```
+docker compose -f docker-compose-mac.yml up -d
+docker compose -f docker-compose-mac.yml down
+```
