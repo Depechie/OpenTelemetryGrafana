@@ -38,7 +38,7 @@ namespace LocationAPI
 
             services.AddHealthChecks();
 
-            services.AddOpenTelemetryTracing(builder =>
+            services.AddOpenTelemetry().WithTracing(builder =>
             {
                 builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(this.Configuration.GetValue<string>("Otlp:ServiceName")))
                 .AddAspNetCoreInstrumentation()

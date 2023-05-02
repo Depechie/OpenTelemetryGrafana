@@ -40,7 +40,7 @@ namespace WeatherAPI
 
             services.AddHttpClient<ILocationService, LocationService>();
 
-            services.AddOpenTelemetryTracing(builder =>
+            services.AddOpenTelemetry().WithTracing(builder =>
             {
                 builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(this.Configuration.GetValue<string>("Otlp:ServiceName")))
                 .AddAspNetCoreInstrumentation()
