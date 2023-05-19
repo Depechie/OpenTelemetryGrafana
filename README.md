@@ -16,6 +16,8 @@ This repository is a work in progress, about having an observability stack for y
 
 For alert provisioning we can extract the JSON through use of the Grafana API: [https://grafana.com/docs/grafana/latest/developers/http_api/alerting_provisioning/](https://grafana.com/docs/grafana/latest/developers/http_api/alerting_provisioning/)
 
+There is a branch [serilog](https://github.com/Depechie/OpenTelemetryGrafana/tree/serilog) that will use a nuget package for sending logs from SeriLog to OpenTelemetry in OTLP format and OpenTelemetry will pass it along to Loki.
+
 ### Usage:
 
 ```
