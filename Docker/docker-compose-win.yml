@@ -73,7 +73,6 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /var/lib/docker/volumes/otel/grafana/grafana.ini:/etc/grafana/grafana.ini
       - /var/lib/docker/volumes/otel/grafana/data:/var/lib/grafana
       - /var/lib/docker/volumes/otel/grafana/provisioning:/etc/grafana/provisioning
     restart: unless-stopped
