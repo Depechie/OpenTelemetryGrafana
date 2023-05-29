@@ -10,7 +10,11 @@ exporters:
   otlp:
     endpoint: tempo:4007
     tls:
-      insecure: true    
+      insecure: true
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    tls:
+      insecure: true
 
 extensions:
   zpages:
@@ -24,4 +28,7 @@ service:
       exporters: [prometheus]
     traces:
       receivers: [otlp]
-      exporters: [otlp]      
+      exporters: [otlp]
+    logs:
+      receivers: [otlp]
+      exporters: [loki]
