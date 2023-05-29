@@ -1,7 +1,7 @@
 services:
   blackbox:
     # https://github.com/prometheus/blackbox_exporter/releases
-    image: prom/blackbox-exporter:v0.23.0
+    image: prom/blackbox-exporter:v0.24.0
     container_name: blackbox
     restart: unless-stopped
     ports:
@@ -15,7 +15,7 @@ services:
      
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.43.0
+    image: prom/prometheus:v2.44.0
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -32,7 +32,7 @@ services:
       
   tempo:
     # https://github.com/grafana/tempo/releases
-    image: grafana/tempo:2.0.1
+    image: grafana/tempo:2.1.1
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
@@ -50,7 +50,7 @@ services:
       
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:2.8.0
+    image: grafana/loki:2.8.2
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -65,7 +65,7 @@ services:
       
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:9.4.7
+    image: grafana/grafana:9.5.2
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -90,7 +90,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.75.0
+    image: otel/opentelemetry-collector-contrib:0.78.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - /var/lib/docker/volumes/otel/otel.yml:/etc/otel-collector-config.yaml
