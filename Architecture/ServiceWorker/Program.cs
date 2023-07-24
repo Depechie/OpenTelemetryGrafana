@@ -29,12 +29,13 @@ namespace ServiceWorker
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddOpenTelemetryTracing(builder =>
-                    {
-                        builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(Configuration.GetValue<string>("Otlp:ServiceName")))
-                            .AddSource("APITracing")
-                            .AddOtlpExporter(options => options.Endpoint = new Uri(Configuration.GetValue<string>("Otlp:Endpoint")));
-                    });
+                    services.AddOpenTelemetry()
+                        .WithTracing(builder =>
+                        {
+                            builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(Configuration.GetValue<string>("Otlp:ServiceName")))
+                                .AddSource("APITracing")
+                                .AddOtlpExporter(options => options.Endpoint = new Uri(Configuration.GetValue<string>("Otlp:Endpoint")));
+                        });
                     services.AddHostedService<Worker>();
                 })
                 .UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration));
