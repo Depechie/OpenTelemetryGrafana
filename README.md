@@ -2,6 +2,8 @@
 
 This repository is a work in progress, about having an observability stack for your microservices environment.
 
+If you want to know/learn more, also check out my Pluralsight course on the subject here [https://app.pluralsight.com/library/courses/opentelemetry-grafana-observability](https://app.pluralsight.com/library/courses/opentelemetry-grafana-observability)
+
 ### Components used:
 
 - ASP.NET Web API for demo services
