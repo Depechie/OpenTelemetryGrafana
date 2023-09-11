@@ -15,7 +15,7 @@ services:
 
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.46.0
+    image: prom/prometheus:v2.47.0
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -32,7 +32,7 @@ services:
 
   tempo:
     # https://github.com/grafana/tempo/releases
-    image: grafana/tempo:2.2.0
+    image: grafana/tempo:2.2.2
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
@@ -50,7 +50,7 @@ services:
   
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:2.8.4
+    image: grafana/loki:2.9.0
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -65,7 +65,7 @@ services:
 
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:10.0.3
+    image: grafana/grafana:10.0.5
     container_name: grafana
     #command:
     environment:
@@ -90,7 +90,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.82.0
+    image: otel/opentelemetry-collector-contrib:0.84.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ${PWD}/otel.yml:/etc/otel-collector-config.yaml
