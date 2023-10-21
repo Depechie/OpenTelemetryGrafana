@@ -73,7 +73,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/provisioning:/etc/grafana/provisioning #https://grafana.com/docs/grafana/latest/administration/provisioning/
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
     user: root
