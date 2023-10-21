@@ -75,7 +75,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - grafana-data:/var/lib/grafana
-      - ${PWD}/grafana/provisioning:/etc/grafana/provisioning
+      - ${PWD}/grafana/provisioning:/etc/grafana/provisioning #https://grafana.com/docs/grafana/latest/administration/provisioning/
     restart: unless-stopped
     ports:
       - 3001:3000
