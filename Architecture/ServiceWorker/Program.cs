@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,19 @@ namespace ServiceWorker
                 .AddCommandLine(args)
                 .Build();
 
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(Configuration)
+                .WriteTo.OpenTelemetry(options =>
+                {
+                    options.Endpoint = $"{Configuration.GetValue<string>("Otlp:Endpoint")}/v1/logs";
+                    options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.Grpc;
+                    options.ResourceAttributes = new Dictionary<string, object>
+                    {
+                        ["service.name"] = Configuration.GetValue<string>("Otlp:ServiceName")
+                    };
+                })
+                .CreateLogger();
+
             CreateHostBuilder(args).Build().Run();
 
             //TODO: Glenn - https://www.mytechramblings.com/posts/getting-started-with-opentelemetry-and-dotnet-core/
@@ -29,15 +43,21 @@ namespace ServiceWorker
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    Action<ResourceBuilder> appResourceBuilder =
+                        resource => resource
+                            .AddTelemetrySdk()
+                            .AddService(Configuration.GetValue<string>("Otlp:ServiceName"));
+
                     services.AddOpenTelemetry()
-                        .WithTracing(builder =>
-                        {
-                            builder.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(Configuration.GetValue<string>("Otlp:ServiceName")))
-                                .AddSource("APITracing")
-                                .AddOtlpExporter(options => options.Endpoint = new Uri(Configuration.GetValue<string>("Otlp:Endpoint")));
-                        });
+                        .ConfigureResource(appResourceBuilder)
+                        .WithTracing(builder => builder
+                            .AddSource("APITracing")
+                            //.AddConsoleExporter()
+                            .AddOtlpExporter(options => options.Endpoint = new Uri(Configuration.GetValue<string>("Otlp:Endpoint")))
+                        );
+
                     services.AddHostedService<Worker>();
                 })
-                .UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration));
+            .UseSerilog();
     }
 }
