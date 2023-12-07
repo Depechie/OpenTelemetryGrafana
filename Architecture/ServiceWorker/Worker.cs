@@ -29,7 +29,7 @@ namespace ServiceWorker
 		public Worker(ILogger<Worker> logger)
 		{
 			_logger = logger;
-			_bus = RabbitMQFactory.CreateBus(BusType.LocalHost);
+			_bus = RabbitMQFactory.CreateBus(BusType.DockerNetworkHost);
 		}
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)

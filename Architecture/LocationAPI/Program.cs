@@ -39,7 +39,7 @@ namespace LocationAPI
                 .ReadFrom.Configuration(hostingContext.Configuration)
                 .WriteTo.OpenTelemetry(options =>
                 {
-                    options.Endpoint = "http://localhost:4317/v1/logs";
+                    options.Endpoint = $"{Configuration.GetValue<string>("Otlp:Endpoint")}/v1/logs";
                     options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.Grpc;
                     options.ResourceAttributes = new Dictionary<string, object>
                     {
@@ -49,7 +49,7 @@ namespace LocationAPI
 
             builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
-            builder.Services.AddSingleton(sp => RabbitMQFactory.CreateBus(BusType.LocalHost));
+            builder.Services.AddSingleton(sp => RabbitMQFactory.CreateBus(BusType.DockerNetworkHost));
 
             Action<ResourceBuilder> appResourceBuilder =
                 resource => resource

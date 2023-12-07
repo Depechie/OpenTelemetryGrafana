@@ -26,7 +26,7 @@ namespace WeatherAPI.Services
         public async Task<Location> GetLocation(double latitude, double longitude)
         {
             // https://localhost:5501/Location?latitude=51.260197&longitude=4.402771
-            return JsonSerializer.Deserialize<Location>(await _httpClient.GetStringAsync($"https://localhost:5501/Location?latitude={latitude.ToString(CultureInfo.InvariantCulture)}&longitude={longitude.ToString(CultureInfo.InvariantCulture)}"), _options);
+            return JsonSerializer.Deserialize<Location>(await _httpClient.GetStringAsync($"http://location.api:5500/Location?latitude={latitude.ToString(CultureInfo.InvariantCulture)}&longitude={longitude.ToString(CultureInfo.InvariantCulture)}"), _options);
         }
     }
 }

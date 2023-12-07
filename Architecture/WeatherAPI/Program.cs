@@ -34,7 +34,7 @@ namespace WeatherAPI
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "OpenTelemetryGrafana", Version = "v1" });
             });
             builder.Services.AddHealthChecks()
-                .AddUrlGroup(new Uri("https://localhost:5501/health"), name: "Location API");
+                .AddUrlGroup(new Uri("http://location.api:5500/health"), name: "Location API");
 
             builder.Services.AddHttpClient<ILocationService, LocationService>();
 
@@ -42,7 +42,7 @@ namespace WeatherAPI
                 .ReadFrom.Configuration(hostingContext.Configuration)
                 .WriteTo.OpenTelemetry(options =>
                 {
-                    options.Endpoint = "http://localhost:4317/v1/logs";
+                    options.Endpoint = $"{Configuration.GetValue<string>("Otlp:Endpoint")}/v1/logs";
                     options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.Grpc;
                     options.ResourceAttributes = new Dictionary<string, object>
                     {
