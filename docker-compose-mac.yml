@@ -153,6 +153,9 @@ services:
       - 5672:5672
       - 15672:15672
     healthcheck:
+      # TODO: Glenn - Verify rabbitmq healthchecks options
+      # https://devops.stackexchange.com/questions/12092/docker-compose-healthcheck-for-rabbitmq?newreg=614274132fbc4f92a92ba80f6d758a76
+      # https://www.rabbitmq.com/monitoring.html#health-checks
       test: [ "CMD", "rabbitmqctl", "status"]
       interval: 5s
       timeout: 20s
