@@ -5,6 +5,8 @@ receivers:
       http:
 
 exporters:
+  debug:
+    verbosity: detailed
   prometheus:
     endpoint: otel:8889
   otlp:
@@ -29,6 +31,8 @@ service:
     traces:
       receivers: [otlp]
       exporters: [otlp]
+      # exporters: [debug, otlp]
     logs:
       receivers: [otlp]
       exporters: [loki]
+      # exporters: [debug, loki]
