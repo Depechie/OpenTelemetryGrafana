@@ -8,6 +8,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.ServiceDefaults", "ote
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Basket.API", "otel.Basket.API\otel.Basket.API.csproj", "{85D77AEB-8F17-4435-BDFE-0FF13916AE05}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Catalog.API", "otel.Catalog.API\otel.Catalog.API.csproj", "{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Models", "otel.Models\otel.Models.csproj", "{FAB48021-3226-4393-97BC-4CF05DCD2EEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +30,14 @@ Global
 		{85D77AEB-8F17-4435-BDFE-0FF13916AE05}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{85D77AEB-8F17-4435-BDFE-0FF13916AE05}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{85D77AEB-8F17-4435-BDFE-0FF13916AE05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

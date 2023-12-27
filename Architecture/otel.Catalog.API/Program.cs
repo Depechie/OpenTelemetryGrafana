@@ -1,4 +1,4 @@
-using otel.Basket.API;
+using otel.Catalog.API;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,8 +10,6 @@ builder.AddServiceDefaults();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-builder.Services.AddHttpClient<ICatalogService, CatalogService>();
 
 var hostBuilder = builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(hostingContext.Configuration));
@@ -43,5 +41,5 @@ if (app.Environment.IsDevelopment())
 app.MapDefaultEndpoints();
 app.MapEndpoints();
 app.UseSerilogRequestLogging();
-    
+
 app.Run();

@@ -1,5 +1,6 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var apiService = builder.AddProject<Projects.otel_Basket_API>("basket.api");
+var basketAPI = builder.AddProject<Projects.otel_Basket_API>("basket.api");
+var catalogAPI = builder.AddProject<Projects.otel_Catalog_API>("catalog.api");
 
 builder.Build().Run();

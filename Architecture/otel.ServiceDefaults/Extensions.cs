@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -69,7 +70,7 @@ public static class Extensions
 
         if (useOtlpExporter)
         {
-            builder.Services.Configure<OpenTelemetryLoggerOptions>(logging => logging.AddOtlpExporter());
+            // builder.Services.Configure<OpenTelemetryLoggerOptions>(logging => logging.AddOtlpExporter());
             builder.Services.ConfigureOpenTelemetryMeterProvider(metrics => metrics.AddOtlpExporter());
             builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddOtlpExporter());
         }
@@ -100,7 +101,16 @@ public static class Extensions
         // app.MapPrometheusScrapingEndpoint();
 
         // All health checks must pass for app to be considered ready to accept traffic after starting
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            AllowCachingResponses = false,
+            ResultStatusCodes =
+            {
+                [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                [HealthStatus.Degraded] = StatusCodes.Status200OK,
+                [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+            }
+        });
 
         // Only health checks tagged with the "live" tag must pass for app to be considered alive
         app.MapHealthChecks("/alive", new HealthCheckOptions
