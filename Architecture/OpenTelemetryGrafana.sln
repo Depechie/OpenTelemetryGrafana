@@ -1,39 +1,9 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeatherAPI", "WeatherAPI\WeatherAPI.csproj", "{80FE5A6F-F40A-4DCA-A9C4-AF77C853139D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocationAPI", "LocationAPI\LocationAPI.csproj", "{9728FBB0-6C16-446C-984E-466A270A119C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceWorker", "ServiceWorker\ServiceWorker.csproj", "{3C286D2B-AD34-4D67-A948-1B5589D141FA}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueueCommon", "QueueCommon\QueueCommon.csproj", "{79B4592B-08C9-4749-A588-5D0EECD86E53}"
-EndProject
 Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{80FE5A6F-F40A-4DCA-A9C4-AF77C853139D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{80FE5A6F-F40A-4DCA-A9C4-AF77C853139D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{80FE5A6F-F40A-4DCA-A9C4-AF77C853139D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{80FE5A6F-F40A-4DCA-A9C4-AF77C853139D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9728FBB0-6C16-446C-984E-466A270A119C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9728FBB0-6C16-446C-984E-466A270A119C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9728FBB0-6C16-446C-984E-466A270A119C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9728FBB0-6C16-446C-984E-466A270A119C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3C286D2B-AD34-4D67-A948-1B5589D141FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3C286D2B-AD34-4D67-A948-1B5589D141FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3C286D2B-AD34-4D67-A948-1B5589D141FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3C286D2B-AD34-4D67-A948-1B5589D141FA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79B4592B-08C9-4749-A588-5D0EECD86E53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79B4592B-08C9-4749-A588-5D0EECD86E53}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79B4592B-08C9-4749-A588-5D0EECD86E53}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79B4592B-08C9-4749-A588-5D0EECD86E53}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection

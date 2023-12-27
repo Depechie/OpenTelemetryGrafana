@@ -1,0 +1,6 @@
+@otel.Basket.API_HostAddress = http://localhost:5252
+
+GET {{otel.Basket.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
