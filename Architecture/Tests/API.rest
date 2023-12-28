@@ -1,0 +1,35 @@
+# Install https://github.com/Huachao/vscode-restclient to perform inline REST calls # Weather API
+
+@catalogAPI=http://localhost:5251
+@basketAPI=http://localhost:5252
+
+# @name getCatalogItems
+GET {{catalogAPI}}/items
+Content-Type: application/json
+
+###
+
+@itemId = {{getCatalogItems.response.body.0.id}}
+
+# @name getCatalogItem
+GET {{catalogAPI}}/items/{{itemId}}
+Content-Type: application/json
+
+###
+
+# @name createCart
+POST {{basketAPI}}/carts
+Content-Type: application/json
+
+###
+
+@cartId = {{createCart.response.body.id}}
+
+# @name addItemToCart
+POST {{basketAPI}}/carts/{{cartId}}/items
+Content-Type: application/json
+
+{
+  "productId": "{{itemId}}",
+  "quantity": 1
+}
