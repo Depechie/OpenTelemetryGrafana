@@ -2,6 +2,16 @@
 apiVersion: 1
 
 datasources:
+- name: Tempo
+  type: tempo
+  uid: tempo
+  access: proxy
+  url: http://host.docker.internal:3200
+  basicAuth: false
+  isDefault: false
+  version: 1
+  editable: false
+
 - name: Loki
   type: loki
   uid: loki
@@ -11,3 +21,9 @@ datasources:
   isDefault: false
   version: 1
   editable: false
+  jsonData:
+    derivedFields:
+      - datasourceUid: tempo
+        matcherRegex: "\u0022traceid\u0022:\u0022(\\w+)\u0022"
+        name: TraceId
+        url: '$${__value.raw}'

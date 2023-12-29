@@ -10,6 +10,10 @@ exporters:
     endpoint: ${env:DASHBOARD_URL}
     tls:
       insecure: true
+  otlp:
+    endpoint: ${env:TEMPO_URL}
+    tls:
+      insecure: true
   loki:
     endpoint: ${env:LOKI_URL}
     tls:
@@ -20,3 +24,6 @@ service:
     logs:
       receivers: [otlp]
       exporters: [loki, otlp/dashboard, debug]
+    traces:
+      receivers: [otlp]
+      exporters: [otlp, otlp/dashboard, debug]
