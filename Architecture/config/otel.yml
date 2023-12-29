@@ -1,0 +1,22 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/dashboard:
+    endpoint: ${env:DASHBOARD_URL}
+    tls:
+      insecure: true
+  loki:
+    endpoint: ${env:LOKI_URL}
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [loki, otlp/dashboard, debug]
