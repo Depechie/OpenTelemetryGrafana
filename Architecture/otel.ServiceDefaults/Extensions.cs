@@ -34,11 +34,11 @@ public static class Extensions
 
     public static IHostApplicationBuilder ConfigureOpenTelemetry(this IHostApplicationBuilder builder)
     {
-        builder.Logging.AddOpenTelemetry(logging =>
-        {
-            logging.IncludeFormattedMessage = true;
-            logging.IncludeScopes = true;
-        });
+        // builder.Logging.AddOpenTelemetry(logging =>
+        // {
+        //     logging.IncludeFormattedMessage = true;
+        //     logging.IncludeScopes = true;
+        // });
 
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics =>
