@@ -1,5 +1,0 @@
-https://github.com/prometheus/prometheus/issues/5976
-
-docker run -it --rm -v /var/lib/docker/volumes/otel/prometheus:/prometheus ubuntu:22.04
-
-chown -R 65534:65534 prometheus
