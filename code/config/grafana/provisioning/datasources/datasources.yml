@@ -6,7 +6,7 @@ datasources:
   type: tempo
   uid: tempo
   access: proxy
-  url: http://host.docker.internal:3200
+  url: ${TEMPO_URL}
   basicAuth: false
   isDefault: false
   version: 1
@@ -16,7 +16,7 @@ datasources:
   type: loki
   uid: loki
   access: proxy
-  url: http://host.docker.internal:3100
+  url: ${LOKI_URL}
   basicAuth: false
   isDefault: false
   version: 1

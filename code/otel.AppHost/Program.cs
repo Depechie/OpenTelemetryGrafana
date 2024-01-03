@@ -31,7 +31,9 @@ builder.AddContainer("grafana", "grafana/grafana", "10.2.1")
     .WithVolumeMount("grafana-data", "/var/lib/grafana", VolumeMountType.Named)
     .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
     .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
-    .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true");
+    .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
+    .WithEnvironment("LOKI_URL", loki.GetEndpoint("http"))
+    .WithEnvironment("TEMPO_URL", tempo.GetEndpoint("http"));
 
 var basketAPI = builder.AddProject<Projects.otel_Basket_API>("basket.api")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"));
