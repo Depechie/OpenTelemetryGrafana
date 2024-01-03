@@ -3,7 +3,7 @@
 This repository is a work in progress, about having an observability stack for your microservices environment.
 
 > [!NOTE]
-> Instead of using docker compose to start up the environment, you can also take a look at the repository using [https://github.com/dotnet/aspire](.NET Aspire) as orchestrator  
+> Instead of using docker compose to start up the environment, you can also take a look at the repository using [.NET Aspire](https://github.com/dotnet/aspire) as orchestrator  
 > It is available on the aspire branch: [aspire orchestrated verion](/../aspire)
 
 If you want to know/learn more, also check out my Pluralsight course on the subject here [https://www.pluralsight.com/library/courses/opentelemetry-grafana-observability](https://www.pluralsight.com/library/courses/opentelemetry-grafana-observability)
