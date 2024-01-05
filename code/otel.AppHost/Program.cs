@@ -2,6 +2,11 @@ using otel.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+builder.AddContainer("blackbox", "prom/blackbox-exporter", "v0.24.0")
+    .WithServiceBinding(containerPort: 9115, hostPort: 9115, name: "http", scheme: "http")
+    .WithVolumeMount("../config/blackbox.yml", "/etc/blackbox/blackbox.yml", VolumeMountType.Bind)
+    .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
+
 var loki = builder.AddContainer("loki", "grafana/loki", "2.9.2")
     .WithServiceBinding(containerPort: 3100, hostPort: 3100, name: "http", scheme: "http")
     .WithServiceBinding(containerPort: 9096, hostPort: 9096, name: "grpc", scheme: "http")
