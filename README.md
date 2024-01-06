@@ -9,7 +9,7 @@ If you want to know/learn more, also check out my Pluralsight course on the subj
 - ASP.NET Web API for demo services
 - RabbitMq as message queue ( still todo in the Aspire variant )
 - OpenTelemetry Collector as middle man for tracing and logs
-- BlackBox and Prometheus for service metrics and health checks ( still todo in the Aspire variant )
+- BlackBox and Prometheus for service metrics and health checks
 - Loki for log aggregation
 - Tempo for tracing aggregation
 - Grafana for overall dashboarding
