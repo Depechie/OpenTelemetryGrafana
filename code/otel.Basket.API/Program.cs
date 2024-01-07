@@ -31,6 +31,8 @@ else
     builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(hostingContext.Configuration));
 
+builder.AddRabbitMQ("messaging");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

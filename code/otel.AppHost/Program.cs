@@ -25,8 +25,11 @@ var otel = builder.AddContainer("otel", "otel/opentelemetry-collector-contrib", 
     .WithEnvironment("TEMPO_URL", tempo.GetEndpoint("otlp"))
     .WithDashboardEndpoint("DASHBOARD_URL");
 
+var messaging = builder.AddRabbitMQ("messaging");
+
 var basketAPI = builder.AddProject<Projects.otel_Basket_API>("basket.api")
-    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"));
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"))
+    .WithReference(messaging);
 
 var catalogAPI = builder.AddProject<Projects.otel_Catalog_API>("catalog.api")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"));
