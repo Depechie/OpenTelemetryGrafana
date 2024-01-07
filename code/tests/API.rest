@@ -23,6 +23,12 @@ Content-Type: application/json
 
 ###
 
+# @name getCarts
+GET {{basketAPI}}/carts
+Content-Type: application/json
+
+###
+
 @cartId = {{createCart.response.body.id}}
 
 # @name addItemToCart
@@ -33,3 +39,9 @@ Content-Type: application/json
   "productId": "{{itemId}}",
   "quantity": 1
 }
+
+###
+
+# @name checkoutCart
+POST {{basketAPI}}/carts/{{cartId}}/checkout
+Content-Type: application/json
