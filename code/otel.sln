@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Catalog.API", "otel.Ca
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Models", "otel.Models\otel.Models.csproj", "{FAB48021-3226-4393-97BC-4CF05DCD2EEC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.QueueCommon", "otel.QueueCommon\otel.QueueCommon.csproj", "{7DF9F346-568F-4516-9223-F02B1C578686}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAB48021-3226-4393-97BC-4CF05DCD2EEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DF9F346-568F-4516-9223-F02B1C578686}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DF9F346-568F-4516-9223-F02B1C578686}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DF9F346-568F-4516-9223-F02B1C578686}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DF9F346-568F-4516-9223-F02B1C578686}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

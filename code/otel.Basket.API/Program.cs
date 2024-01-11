@@ -1,4 +1,6 @@
 using otel.Basket.API;
+using otel.QueueCommon;
+using RabbitMQ.Client;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +33,8 @@ else
     builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(hostingContext.Configuration));
 
-builder.AddRabbitMQ("messaging");
+builder.AddRabbitMQ(Bus.Host);
+builder.Services.AddSingleton<IBus>(sp => RabbitMQFactory.CreateBus(sp.GetService<IConnection>()));
 
 var app = builder.Build();
 

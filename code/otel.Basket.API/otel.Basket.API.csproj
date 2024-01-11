@@ -18,7 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\otel.ServiceDefaults\otel.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\otel.Models\otel.Models.csproj" />    
+    <ProjectReference Include="..\otel.Models\otel.Models.csproj" />
+    <ProjectReference Include="..\otel.QueueCommon\otel.QueueCommon.csproj" />    
   </ItemGroup>
 
 </Project>

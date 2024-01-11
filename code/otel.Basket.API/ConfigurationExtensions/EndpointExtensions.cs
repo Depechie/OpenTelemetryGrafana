@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using otel.Models;
+using otel.QueueCommon;
 using RabbitMQ.Client;
 
 namespace otel.Basket.API;
@@ -10,7 +11,8 @@ public static class EndpointExtensions
     {
         var catalogService = app.Services.GetRequiredService<ICatalogService>();
         var carts = new Dictionary<Guid, Cart>();
-        var messageConnection = app.Services.GetService<IConnection>();
+        // var messageConnection = app.Services.GetService<IConnection>();
+        var rabbitMQBus = app.Services.GetService<IBus>();
 
         app.MapGet("/carts", () => Results.Ok(carts.Values));
 
@@ -36,24 +38,10 @@ public static class EndpointExtensions
             if (!carts.TryGetValue(cartId, out Cart cart))
                 return Results.NotFound();
 
-            // If the connection is null return a 503
-            if (messageConnection is null)
+            if (rabbitMQBus is null)
                 return Results.StatusCode(503);
             else
-            {
-                const string configKeyName = "Aspire:RabbitMQ:Client:OrderQueueName";
-                string? queueName = app.Configuration[configKeyName];
-                if (string.IsNullOrEmpty(queueName))
-                    return Results.StatusCode(503);
-
-                using var channel = messageConnection.CreateModel();
-                channel.QueueDeclare(queueName, exclusive: false);
-                channel.BasicPublish(
-                    exchange: "",
-                    routingKey: queueName,
-                    basicProperties: null,
-                    body: JsonSerializer.SerializeToUtf8Bytes(cart));
-            }
+                await rabbitMQBus.SendAsync(Queue.Orders, cart);
 
             return Results.Created($"/carts/{cartId}/checkout", cart);
         });
