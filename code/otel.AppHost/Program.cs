@@ -34,15 +34,19 @@ var basketAPI = builder.AddProject<Projects.otel_Basket_API>("basket.api")
 var catalogAPI = builder.AddProject<Projects.otel_Catalog_API>("catalog.api")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"));
 
-builder.AddContainer("blackbox", "prom/blackbox-exporter", "v0.24.0")
-    .WithServiceBinding(containerPort: 9115, hostPort: 9115, name: "http", scheme: "http")
-    .WithVolumeMount("../config/blackbox.yml", "/etc/blackbox/blackbox.yml", VolumeMountType.Bind)
-    .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
+var serviceWorker = builder.AddProject<Projects.otel_ServiceWorker>("serviceworker")
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"))
+    .WithReference(messaging);
 
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.48.0")
-    .WithServiceBinding(containerPort: 9090, hostPort: 9090, name: "http", scheme: "http")
-    .WithVolumeMount("../config/prometheus.yml", "/etc/prometheus/prometheus.yml", VolumeMountType.Bind)
-    .WithVolumeMount("prometheus", "/prometheus", VolumeMountType.Named);
+// builder.AddContainer("blackbox", "prom/blackbox-exporter", "v0.24.0")
+//     .WithServiceBinding(containerPort: 9115, hostPort: 9115, name: "http", scheme: "http")
+//     .WithVolumeMount("../config/blackbox.yml", "/etc/blackbox/blackbox.yml", VolumeMountType.Bind)
+//     .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
+
+// var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.48.0")
+//     .WithServiceBinding(containerPort: 9090, hostPort: 9090, name: "http", scheme: "http")
+//     .WithVolumeMount("../config/prometheus.yml", "/etc/prometheus/prometheus.yml", VolumeMountType.Bind)
+//     .WithVolumeMount("prometheus", "/prometheus", VolumeMountType.Named);
     // .WithEnvironment("BASKET_URL", basketAPI.GetEndpoint("http"))
     // .WithEnvironment("CATALOG_URL", catalogAPI.GetEndpoint("http"))
     // .WithArgs("--config.file=/etc/prometheus/prometheus.yml", "--enable-feature=expand-external-labels");
@@ -55,7 +59,7 @@ builder.AddContainer("grafana", "grafana/grafana", "10.2.1")
     .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
     .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
     .WithEnvironment("LOKI_URL", loki.GetEndpoint("http"))
-    .WithEnvironment("TEMPO_URL", tempo.GetEndpoint("http"))
-    .WithEnvironment("PROMETHEUS_URL", prometheus.GetEndpoint("http"));
+    .WithEnvironment("TEMPO_URL", tempo.GetEndpoint("http"));
+    // .WithEnvironment("PROMETHEUS_URL", prometheus.GetEndpoint("http"));
 
 builder.Build().Run();

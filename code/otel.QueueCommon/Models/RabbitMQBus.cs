@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -18,12 +19,7 @@ public class RabbitMQBus : IBus
 
     public async Task ReceiveAsync<T>(string queue, Action<T, BasicDeliverEventArgs> onMessage)
     {
-        _channel.QueueDeclare(
-            queue: queue,
-            durable: true,
-            exclusive: false,
-            autoDelete: false
-        );
+        _channel.QueueDeclare(queue, true, false, false);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 

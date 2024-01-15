@@ -11,7 +11,6 @@ public static class EndpointExtensions
     {
         var catalogService = app.Services.GetRequiredService<ICatalogService>();
         var carts = new Dictionary<Guid, Cart>();
-        // var messageConnection = app.Services.GetService<IConnection>();
         var rabbitMQBus = app.Services.GetService<IBus>();
 
         app.MapGet("/carts", () => Results.Ok(carts.Values));

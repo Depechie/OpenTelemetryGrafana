@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\otel.Basket.API\otel.Basket.API.csproj" />
     <ProjectReference Include="..\otel.Catalog.API\otel.Catalog.API.csproj" />
+    <ProjectReference Include="..\otel.ServiceWorker\otel.ServiceWorker.csproj" />
   </ItemGroup>
 
 </Project>

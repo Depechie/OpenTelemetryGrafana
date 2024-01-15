@@ -9,10 +9,11 @@ Content-Type: application/json
 
 ###
 
-@itemId = {{getCatalogItems.response.body.0.id}}
+@item0Id = {{getCatalogItems.response.body.0.id}}
+@item1Id = {{getCatalogItems.response.body.1.id}}
 
 # @name getCatalogItem
-GET {{catalogAPI}}/items/{{itemId}}
+GET {{catalogAPI}}/items/{{item0Id}}
 Content-Type: application/json
 
 ###
@@ -31,12 +32,23 @@ Content-Type: application/json
 
 @cartId = {{createCart.response.body.id}}
 
-# @name addItemToCart
+# @name addItemT0oCart
 POST {{basketAPI}}/carts/{{cartId}}/items
 Content-Type: application/json
 
 {
-  "productId": "{{itemId}}",
+  "productId": "{{item0Id}}",
+  "quantity": 1
+}
+
+###
+
+# @name addItemT1oCart
+POST {{basketAPI}}/carts/{{cartId}}/items
+Content-Type: application/json
+
+{
+  "productId": "{{item1Id}}",
   "quantity": 1
 }
 
