@@ -1,12 +1,24 @@
-﻿using otel.Models;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using otel.Models;
 
 namespace otel.Catalog.API;
 
 public static class EndpointExtensions
 {
-    public static WebApplication MapEndpoints(this WebApplication app)
+    private static List<Product> _products = new List<Product>();
+
+    public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
     {
-        var products = new List<Product>();
+        initData();
+
+        app.MapGet("/items", GetItems);
+        app.MapGet("/items/{id:Guid}", GetItem);
+
+        return app;
+    }
+
+    private static void initData()
+    {
         var random = new Random();
 
         for (int i = 0; i < 5; i++)
@@ -21,24 +33,15 @@ public static class EndpointExtensions
                 Name = name,
                 Price = price
             };
-            products.Add(product);
+            _products.Add(product);
         }
-                
-        app.MapGet("/items", () =>
-        {
-            return products;
-        })
-        .WithName("GetItems")
-        .WithOpenApi();
+    }
 
-        app.MapGet("/items/{id}", (Guid id) =>
-        {
-            var product = products.FirstOrDefault(p => p.Id == id);
-            return Results.Ok(product);
-        })
-        .WithName("GetItem")
-        .WithOpenApi();
-        
-        return app;
+    public static async Task<Results<Ok<List<Product>>, BadRequest<string>>> GetItems() => await Task.FromResult(TypedResults.Ok(_products));
+
+    public static async Task<Results<Ok<Product>, NotFound, BadRequest<string>>> GetItem(Guid id)
+    {
+        var product = _products.FirstOrDefault(p => p.Id == id);
+        return await Task.FromResult(TypedResults.Ok(product));
     }
 }
