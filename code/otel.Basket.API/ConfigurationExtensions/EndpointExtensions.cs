@@ -1,12 +1,18 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using System.Diagnostics;
+using Microsoft.AspNetCore.Http.HttpResults;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 using otel.Models;
 using otel.QueueCommon;
+using RabbitMQ.Client;
 
 namespace otel.Basket.API;
 
 public static class EndpointExtensions
 {
     private static Dictionary<Guid, Cart> _carts = new Dictionary<Guid, Cart>();
+    private static readonly ActivitySource _activitySource = new("Aspire.RabbitMQ.Client");
+    private static readonly TextMapPropagator Propagator = Propagators.DefaultTextMapPropagator;
 
     public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
     {
@@ -49,10 +55,45 @@ public static class EndpointExtensions
         if (rabbitMQBus is null)
             return TypedResults.StatusCode(503);
         else
-            await rabbitMQBus.SendAsync(Queue.Orders, cart);
+        {
+            using var activity = _activitySource.StartActivity($"{Queue.Orders} publish", ActivityKind.Producer);
+            var basicProperties = rabbitMQBus.GetBasicProperties();
+            AddActivityToHeader(activity, basicProperties);            
+            await rabbitMQBus.SendAsync(Queue.Orders, cart, basicProperties);
+        }
 
         // _carts.Remove(cartId);
 
         return TypedResults.Created($"/carts/{cartId}/checkout", cart);
     }
+
+    private static void AddActivityToHeader(Activity activity, IBasicProperties props)
+    {
+        try
+        {
+            Propagator.Inject(new PropagationContext(activity.Context, Baggage.Current), props, InjectContextIntoHeader);
+            activity?.SetTag("messaging.system", "rabbitmq");
+            activity?.SetTag("messaging.destination_kind", "queue");
+            activity?.SetTag("messaging.rabbitmq.queue", "sample"); //TODO: Glenn - Queue name?
+            activity?.SetTag("messaging.destination", string.Empty);
+            activity?.SetTag("messaging.rabbitmq.routing_key", Queue.Orders);
+        }
+        catch(Exception ex)
+        {
+            var t = ex.Message;
+        }
+    }
+
+    private static void InjectContextIntoHeader(IBasicProperties props, string key, string value)
+    {
+        try
+        {
+            props.Headers ??= new Dictionary<string, object>();
+            props.Headers[key] = value;
+        }
+        catch (Exception ex)
+        {
+            // _logger.LogError(ex, "Failed to inject trace context");
+        }
+    }    
 }

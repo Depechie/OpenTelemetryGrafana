@@ -1,9 +1,11 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
 using otel.Models;
 using otel.QueueCommon;
@@ -16,6 +18,9 @@ public class Worker: BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IBus _rabbitMQBus;
+
+    private static readonly ActivitySource _activitySource = new("Aspire.RabbitMQ.Client");
+    private static readonly TextMapPropagator Propagator = new TraceContextPropagator();
 
     private readonly IServiceProvider _serviceProvider;
     private IConnection? _messageConnection;
@@ -46,7 +51,7 @@ public class Worker: BackgroundService
         {
              _logger.LogInformation($"Awaiting messages...");
 
-            string queueName = "orders";
+            string queueName = Queue.Orders;
 
             _messageConnection = _serviceProvider.GetRequiredService<IConnection>();
             _messageChannel = _messageConnection.CreateModel();
@@ -63,6 +68,11 @@ public class Worker: BackgroundService
 
     private void ProcessMessageAsync(object? sender, BasicDeliverEventArgs args)
     {
+        var parentContext = Propagator.Extract(default, args.BasicProperties, ExtractTraceContextFromBasicProperties);
+        Baggage.Current = parentContext.Baggage;
+
+        using var activity = _activitySource.StartActivity($"{Queue.Orders} receive", ActivityKind.Consumer, parentContext.ActivityContext);
+        AddActivityTags(activity);
         _logger.LogInformation($"Processing Order at: {DateTime.UtcNow}");
 
         var jsonSpecified = Encoding.UTF8.GetString(args.Body.Span);
@@ -71,8 +81,30 @@ public class Worker: BackgroundService
         _logger.LogInformation($"Message received: {item.Id}");
     }
 
-    private void ProcessMessage(Cart message, BasicDeliverEventArgs args)
+    private IEnumerable<string> ExtractTraceContextFromBasicProperties(IBasicProperties props, string key)
     {
-        _logger.LogInformation($"Message received: {message.Id}");
+        try
+        {
+            if (props.Headers.TryGetValue(key, out var value))
+            {
+                var bytes = value as byte[];
+                return new[] { Encoding.UTF8.GetString(bytes) };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to extract trace context: {ex}");
+        }
+
+        return Enumerable.Empty<string>();
+    }
+
+    private void AddActivityTags(Activity activity)
+    {
+        activity?.SetTag("messaging.system", "rabbitmq");
+        activity?.SetTag("messaging.destination_kind", "queue");
+        activity?.SetTag("messaging.rabbitmq.queue", "sample"); //TODO: Glenn - Queue name?
+        activity?.SetTag("messaging.destination", string.Empty);
+        activity?.SetTag("messaging.rabbitmq.routing_key", Queue.Orders);
     }
 }
