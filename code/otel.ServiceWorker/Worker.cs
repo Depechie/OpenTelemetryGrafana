@@ -23,14 +23,16 @@ public class Worker: BackgroundService
     private static readonly TextMapPropagator Propagator = new TraceContextPropagator();
 
     private readonly IServiceProvider _serviceProvider;
+    private readonly ICatalogService _catalogService;
     private IConnection? _messageConnection;
     private IModel? _messageChannel;
 
-    public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider)
+    public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider, ICatalogService catalogService)
     {
         _logger = logger;
         // _rabbitMQBus = bus;
         _serviceProvider = serviceProvider;
+        _catalogService = catalogService;
     }
 
     // protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -58,7 +60,7 @@ public class Worker: BackgroundService
             _messageChannel.QueueDeclare(queueName, true, false, false);
 
             var consumer = new EventingBasicConsumer(_messageChannel);
-            consumer.Received += ProcessMessageAsync;
+            consumer.Received += async (s, e) => await ProcessMessageAsync(s, e);
 
             _messageChannel.BasicConsume(queue: queueName,
                                          autoAck: true,
@@ -66,7 +68,7 @@ public class Worker: BackgroundService
         }, stoppingToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
     }
 
-    private void ProcessMessageAsync(object? sender, BasicDeliverEventArgs args)
+    private async Task ProcessMessageAsync(object? sender, BasicDeliverEventArgs args)
     {
         var parentContext = Propagator.Extract(default, args.BasicProperties, ExtractTraceContextFromBasicProperties);
         Baggage.Current = parentContext.Baggage;
@@ -79,6 +81,15 @@ public class Worker: BackgroundService
         var item = JsonSerializer.Deserialize<Cart>(jsonSpecified);
 
         _logger.LogInformation($"Message received: {item.Id}");
+        _logger.LogInformation($"Message received: {jsonSpecified}");
+
+        List<Task> tasks = new List<Task>();
+        foreach (var cartItem in item.Items)
+        {
+            tasks.Add(Task.Run(() => _catalogService.GetProduct(cartItem.Id)));
+        }
+
+        await Task.WhenAll(tasks);
     }
 
     private IEnumerable<string> ExtractTraceContextFromBasicProperties(IBasicProperties props, string key)

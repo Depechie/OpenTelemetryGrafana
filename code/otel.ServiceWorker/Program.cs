@@ -35,6 +35,7 @@ else
     });
 
 // builder.Services.AddSingleton<IBus>(sp => RabbitMQFactory.CreateBus(sp.GetService<IConnection>()));
+builder.Services.AddHttpClient<ICatalogService, CatalogService>();
 builder.Services.AddHostedService<Worker>();
 
 var app = builder.Build();
