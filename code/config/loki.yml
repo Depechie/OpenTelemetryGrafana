@@ -24,3 +24,10 @@ schema_config:
       index:
         prefix: index_
         period: 24h
+
+# https://github.com/grafana/loki/issues/5123
+query_scheduler:
+  max_outstanding_requests_per_tenant: 10000
+
+frontend:
+  max_outstanding_per_tenant: 10000
