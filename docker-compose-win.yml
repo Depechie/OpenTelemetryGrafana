@@ -56,7 +56,7 @@ services:
      
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.48.0
+    image: prom/prometheus:v2.49.1
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -91,7 +91,7 @@ services:
       
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:2.9.2
+    image: grafana/loki:2.9.4
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -106,7 +106,7 @@ services:
       
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:10.2.2
+    image: grafana/grafana:10.3.1
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -131,7 +131,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.90.1
+    image: otel/opentelemetry-collector-contrib:0.92.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./Docker/otel.yml:/etc/otel-collector-config.yaml
