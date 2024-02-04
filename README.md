@@ -1,6 +1,6 @@
 # OpenTelemetry together with the Grafana stack
 
-This repository is a work in progress, about having an observability stack for your microservices environment.
+This repository is a work in progress, about having an observability stack for your microservices environment with [.NET Aspire](https://github.com/dotnet/aspire).
 
 If you want to know/learn more, also check out my Pluralsight course on the subject here [https://www.pluralsight.com/library/courses/opentelemetry-grafana-observability](https://www.pluralsight.com/library/courses/opentelemetry-grafana-observability)
 
@@ -15,6 +15,10 @@ If you want to know/learn more, also check out my Pluralsight course on the subj
 - Grafana for overall dashboarding
 
 ### Remarks:
+
+To be able to get the environment functioning correctly be sure to have following setting active in Docker Desktop: **Add the \*.docker.internal names to the host's etc/hosts file**
+
+![Docker Desktop](code/images/docker_desktop_settings.png)
 
 For alert provisioning we can extract the JSON through use of the Grafana API: [https://grafana.com/docs/grafana/latest/developers/http_api/alerting_provisioning/](https://grafana.com/docs/grafana/latest/developers/http_api/alerting_provisioning/)
 
