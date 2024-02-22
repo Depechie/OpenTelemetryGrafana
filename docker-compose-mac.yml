@@ -56,7 +56,7 @@ services:
 
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.49.1
+    image: prom/prometheus:v2.50.0
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -106,7 +106,7 @@ services:
 
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:10.3.1
+    image: grafana/grafana:10.3.3
     container_name: grafana
     #command:
     environment:
@@ -131,7 +131,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.92.0
+    image: otel/opentelemetry-collector-contrib:0.95.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ${PWD}/Docker/otel.yml:/etc/otel-collector-config.yaml
