@@ -16,7 +16,7 @@ var tempo = builder.AddContainer("tempo", "grafana/tempo", "2.3.1")
     .WithVolumeMount("tempo", "/tmp/tempo", VolumeMountType.Named)
     .WithArgs("-config.file=/etc/tempo.yaml");
 
-var otel = builder.AddContainer("otel", "otel/opentelemetry-collector-contrib", "0.92.0")
+var otel = builder.AddContainer("otel", "otel/opentelemetry-collector-contrib", "0.95.0")
     .WithEndpoint(containerPort: 4317, hostPort: 4317, name: "grpc", scheme: "http") // Have to put the schema to HTTP otherwise the C# will complain about the OTEL_EXPORTER_OTLP_ENDPOINT variable
     .WithEndpoint(containerPort: 55679, hostPort: 9200, name: "zpages", scheme: "http")
     .WithVolumeMount("../config/otel.yml", "/etc/otel-collector-config.yaml", VolumeMountType.Bind)
@@ -43,7 +43,7 @@ builder.AddContainer("blackbox", "prom/blackbox-exporter", "v0.24.0")
     .WithVolumeMount("../config/blackbox.yml", "/etc/blackbox/blackbox.yml", VolumeMountType.Bind)
     .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
 
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.49.1")
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.50.0")
     .WithEndpoint(containerPort: 9090, hostPort: 9090, name: "http", scheme: "http")
     .WithVolumeMount("../config/prometheus.yml", "/etc/prometheus/prometheus.yml", VolumeMountType.Bind)
     .WithVolumeMount("prometheus", "/prometheus", VolumeMountType.Named);
@@ -51,7 +51,7 @@ var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.49.1"
     // .WithEnvironment("CATALOG_URL", catalogAPI.GetEndpoint("http"))
     // .WithArgs("--config.file=/etc/prometheus/prometheus.yml", "--enable-feature=expand-external-labels");
 
-builder.AddContainer("grafana", "grafana/grafana", "10.3.1")
+builder.AddContainer("grafana", "grafana/grafana", "10.3.3")
     .WithEndpoint(containerPort: 3000, hostPort: 3000, name: "http", scheme: "http")
     .WithVolumeMount("../config/grafana/provisioning", "/etc/grafana/provisioning", VolumeMountType.Bind)
     .WithVolumeMount("grafana-data", "/var/lib/grafana", VolumeMountType.Named)
