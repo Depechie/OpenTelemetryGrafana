@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.0.0
 MinimumVisualStudioVersion = 17.8.0.0
@@ -6,15 +7,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.AppHost", "otel.AppHos
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.ServiceDefaults", "otel.ServiceDefaults\otel.ServiceDefaults.csproj", "{D908B921-A610-46A0-98D1-0DA71736E796}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Basket.API", "otel.Basket.API\otel.Basket.API.csproj", "{85D77AEB-8F17-4435-BDFE-0FF13916AE05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.Basket.API", "otel.Basket.API\otel.Basket.API.csproj", "{85D77AEB-8F17-4435-BDFE-0FF13916AE05}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Catalog.API", "otel.Catalog.API\otel.Catalog.API.csproj", "{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.Catalog.API", "otel.Catalog.API\otel.Catalog.API.csproj", "{45AF1BD8-91E6-4E13-AD37-C268C1E9C569}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.Models", "otel.Models\otel.Models.csproj", "{FAB48021-3226-4393-97BC-4CF05DCD2EEC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.Models", "otel.Models\otel.Models.csproj", "{FAB48021-3226-4393-97BC-4CF05DCD2EEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.QueueCommon", "otel.QueueCommon\otel.QueueCommon.csproj", "{7DF9F346-568F-4516-9223-F02B1C578686}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.QueueCommon", "otel.QueueCommon\otel.QueueCommon.csproj", "{7DF9F346-568F-4516-9223-F02B1C578686}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "otel.ServiceWorker", "otel.ServiceWorker\otel.ServiceWorker.csproj", "{869E4C71-92A3-4999-9A75-E0B5992F50EB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "otel.ServiceWorker", "otel.ServiceWorker\otel.ServiceWorker.csproj", "{869E4C71-92A3-4999-9A75-E0B5992F50EB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
