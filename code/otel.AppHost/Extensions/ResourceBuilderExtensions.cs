@@ -1,6 +1,8 @@
 ﻿namespace otel.AppHost;
 
-using Aspire.Hosting.Utils;
+using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
+using Microsoft.Extensions.Configuration;
 
 public static class ResourceBuilderExtensions
 {
@@ -23,7 +25,7 @@ public static class ResourceBuilderExtensions
 
             var url = configuration[DashboardOtlpUrlVariableName] ?? DashboardOtlpUrlDefaultValue;
             context.EnvironmentVariables[name] = builder.Resource is ContainerResource
-                ? HostNameResolver.ReplaceLocalhostWithContainerHost(url, configuration)
+                ? ReplaceLocalhostWithContainerHost(url, configuration)
                 : url;
         });
     }
@@ -35,16 +37,29 @@ public static class ResourceBuilderExtensions
         {
             if (context.PublisherName == "manifest")
             {
-                context.EnvironmentVariables[name] = $"{lokiEndpoint.UriString}/loki/api/v1/push";
+                context.EnvironmentVariables[name] = $"{lokiEndpoint.Url}/loki/api/v1/push";
                 return;
             }
 
             // https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/lokiexporter#getting-started
-            var url = lokiEndpoint.UriString + "/loki/api/v1/push";
+            var url = lokiEndpoint.Url + "/loki/api/v1/push";
 
             context.EnvironmentVariables[name] = builder.Resource is ContainerResource
-            ? HostNameResolver.ReplaceLocalhostWithContainerHost(url, builder.ApplicationBuilder.Configuration)
+            ? ReplaceLocalhostWithContainerHost(url, builder.ApplicationBuilder.Configuration)
             : url;
         });
+    }
+
+
+    private static string ReplaceLocalhostWithContainerHost(string value,ConfigurationManager configuration )
+    {
+        // https://stackoverflow.com/a/43541732/45091
+
+        // This configuration value is a workaround for the fact that host.docker.internal is not available on Linux by default.
+        var hostName = configuration["AppHost:ContainerHostname"] ?? /*_dcpInfo?.Containers?.ContainerHostName ??*/ "host.docker.internal";;
+
+        return value.Replace("localhost", hostName, StringComparison.OrdinalIgnoreCase)
+                    .Replace("127.0.0.1", hostName)
+                    .Replace("[::1]", hostName);
     }
 }
