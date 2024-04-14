@@ -3,7 +3,7 @@ using otel.AppHost;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var loki = builder
-    .AddContainer("loki", "grafana/loki", "2.9.5")
+    .AddContainer("loki", "grafana/loki", "2.9.7")
     .WithEndpoint(targetPort: 3100, port: 3100, name: "http", scheme: "http")
     .WithEndpoint(targetPort: 9096, port: 9096, name: "grpc", scheme: "http")
     .WithBindMount("../config/loki.yml", "/etc/loki/local-config.yaml")
@@ -11,7 +11,7 @@ var loki = builder
     .WithArgs("-config.file=/etc/loki/local-config.yaml");
 
 var tempo = builder
-    .AddContainer("tempo", "grafana/tempo", "2.4.0")
+    .AddContainer("tempo", "grafana/tempo", "2.4.1")
     .WithEndpoint(targetPort: 3200, port: 3200, name: "http", scheme: "http")
     .WithEndpoint(targetPort: 4317, port: 4007, name: "otlp", scheme: "http")
     .WithBindMount("../config/tempo.yml", "/etc/tempo.yaml")
@@ -44,12 +44,12 @@ var serviceWorker = builder.AddProject<Projects.otel_ServiceWorker>("servicework
     .WithReference(messaging);
 
 builder
-    .AddContainer("blackbox", "prom/blackbox-exporter", "v0.24.0")
+    .AddContainer("blackbox", "prom/blackbox-exporter", "v0.25.0")
     .WithEndpoint(targetPort: 9115, port: 9115, name: "http", scheme: "http")
     .WithBindMount("../config/", "/etc/blackbox/")
     .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
 
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.50.1")
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.51.1")
     .WithEndpoint(targetPort: 9090, port: 9090, name: "http", scheme: "http")
     .WithBindMount("../config/prometheus.yml", "/etc/prometheus/prometheus.yml")
     .WithVolume("prometheus", "/prometheus")
@@ -59,7 +59,7 @@ var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.50.1"
     // .WithEnvironment("CATALOG_URL", catalogAPI.GetEndpoint("http"))
     // .WithArgs("--config.file=/etc/prometheus/prometheus.yml", "--enable-feature=expand-external-labels");
 
-builder.AddContainer("grafana", "grafana/grafana", "10.3.4")
+builder.AddContainer("grafana", "grafana/grafana", "10.4.2")
     .WithEndpoint(targetPort: 3000, port: 3000, name: "http", scheme: "http")
     .WithBindMount("../config/grafana/provisioning", "/etc/grafana/provisioning")
     .WithVolume("grafana-data", "/var/lib/grafana")
