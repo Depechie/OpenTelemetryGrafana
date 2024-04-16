@@ -10,6 +10,8 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:16052",
+        "DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS": "true",
+        "DOTNET_DASHBOARD_OTLP_AUTH_MODE": "Unsecured",
         "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true"
       }
     }
