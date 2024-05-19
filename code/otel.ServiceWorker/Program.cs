@@ -10,7 +10,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 // Add Aspire
 builder.AddServiceDefaults();
-builder.AddRabbitMQ(Bus.Host);
+builder.AddRabbitMQClient(Bus.Host);
 
 var otelEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
 

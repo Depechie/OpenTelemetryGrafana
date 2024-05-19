@@ -17,7 +17,8 @@ public static class ResourceBuilderExtensions
 
         return builder.WithEnvironment(context =>
         {
-            if (context.PublisherName == "manifest")
+            var t = context.ExecutionContext;
+            if (context.ExecutionContext.IsPublishMode)
             {
                 // Runtime only
                 return;
@@ -35,7 +36,11 @@ public static class ResourceBuilderExtensions
     {
         return builder.WithEnvironment(context =>
         {
-            if (context.PublisherName == "manifest")
+            var t = context.ExecutionContext;
+            // "manifest" is IsRunMode == false, no? i.e. it's DistributedApplicationOperation.Publish mode, which generates the manifest
+            //manifest == IsPublish mode
+            // if (context.PublisherName == "manifest")
+            if (context.ExecutionContext.IsPublishMode)
             {
                 context.EnvironmentVariables[name] = $"{lokiEndpoint.Url}/loki/api/v1/push";
                 return;
