@@ -2,6 +2,16 @@ receivers:
   otlp:
     protocols:
       grpc:
+  # prometheus:
+  #   trim_metric_suffixes: true
+  #   use_start_time_metric: true
+  #   start_time_metric_regex: .*
+  #   config:
+  #     scrape_configs:
+  #       - job_name: 'otel-collector-metrics'
+  #         scrape_interval: 5s
+  #         static_configs:
+  #           - targets: ['127.0.0.1:8888']
 
 exporters:
   debug:
@@ -9,7 +19,7 @@ exporters:
   otlp/dashboard:
     endpoint: ${env:DASHBOARD_URL}
     tls:
-      insecure: true
+      insecure: true    
   otlp:
     endpoint: ${env:TEMPO_URL}
     tls:
@@ -18,12 +28,23 @@ exporters:
     endpoint: ${env:LOKI_URL}
     tls:
       insecure: true
+  # prometheus:
+  #   endpoint: 0.0.0.0:8889
+
+processors:
+  batch:
 
 service:
   pipelines:
     logs:
       receivers: [otlp]
+      processors: [batch]
       exporters: [loki, otlp/dashboard, debug]
+    # metrics:
+    #   receivers: [prometheus, otlp]
+    #   processors: [batch]
+    #   exporters: [prometheus, debug]
     traces:
       receivers: [otlp]
+      processors: [batch]
       exporters: [otlp, otlp/dashboard, debug]
