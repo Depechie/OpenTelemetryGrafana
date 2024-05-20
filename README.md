@@ -27,6 +27,6 @@ This sample is sending logs from SeriLog to OpenTelemetry in OTLP format and Ope
 ### Usage:
 
 ```
-docker compose -f docker-compose-mac.yml up -d
-docker compose -f docker-compose-mac.yml down
+docker compose -f docker-compose-mac.yml --profile all up -d
+docker compose -f docker-compose-mac.yml --profile all down
 ```

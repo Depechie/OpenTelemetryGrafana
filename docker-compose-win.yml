@@ -1,5 +1,5 @@
 # Usage:
-# docker compose -f docker-compose-win.yml up -d
+# docker compose -f docker-compose-win.yml --profile all up -d
 # docker compose -f docker-compose-win.yml --profile otel-no-monitoring --profile services-all  up -d
 
 services:

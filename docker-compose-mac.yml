@@ -1,5 +1,5 @@
 # Usage:
-# docker compose -f docker-compose-mac.yml up -d
+# docker compose -f docker-compose-mac.yml --profile all up -d
 # docker compose -f docker-compose-mac.yml --profile otel-no-monitoring --profile services-all  up -d
 
 services:
@@ -17,6 +17,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - services-all
 
   location.api:
@@ -34,6 +35,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - services-all
 
   serviceworker:
@@ -48,6 +50,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - services-all
 
   blackbox:
@@ -64,6 +67,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - otel-all
 
   prometheus:
@@ -85,6 +89,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - otel-all
       - otel-no-monitoring
 
@@ -106,6 +111,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - otel-all
       - otel-no-monitoring
   
@@ -124,6 +130,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - otel-all
       - otel-no-monitoring
 
@@ -150,6 +157,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - otel-all
       - otel-no-monitoring
 
@@ -170,6 +178,7 @@ services:
     networks:
       otel:
     profiles:
+      - all
       - otel-all
       - otel-no-monitoring
 
@@ -192,7 +201,8 @@ services:
     networks:
       otel:
     profiles:
-      - services-all
+      - all
+      - services-all        
 
 networks:
   otel:
