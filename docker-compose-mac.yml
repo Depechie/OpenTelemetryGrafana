@@ -1,5 +1,6 @@
 # Usage:
 # docker compose -f docker-compose-mac.yml --profile all up -d
+# docker compose -f docker-compose-mac.yml --profile otel-all up -d
 # docker compose -f docker-compose-mac.yml --profile otel-no-monitoring --profile services-all up -d
 
 services:
