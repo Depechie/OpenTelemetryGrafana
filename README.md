@@ -7,7 +7,7 @@ If you want to know/learn more, also check out my Pluralsight course on the subj
 ### Components used:
 
 - ASP.NET Web API for demo services
-- RabbitMq as message queue ( still todo in the Aspire variant )
+- RabbitMq as message queue
 - OpenTelemetry Collector as middle man for tracing and logs
 - BlackBox and Prometheus for service metrics and health checks
 - Loki for log aggregation
