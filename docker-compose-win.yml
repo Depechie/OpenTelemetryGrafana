@@ -69,7 +69,7 @@ services:
      
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.52.0
+    image: prom/prometheus:v2.53.0
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -88,10 +88,20 @@ services:
     profiles:
       - otel-all
       - otel-no-monitoring
+
+  # Tempo runs as user 10001, and docker compose creates the volume as root.
+  # As such, we need to chown the volume in order for Tempo to start correctly.
+  init:
+    image: &tempoImage grafana/tempo:2.5.0
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/var/tempo"
       
   tempo:
     # https://github.com/grafana/tempo/releases
-    image: grafana/tempo:2.4.2
+    image: *tempoImage
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
@@ -158,7 +168,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.100.0
+    image: otel/opentelemetry-collector-contrib:0.103.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./Docker/otel.yml:/etc/otel-collector-config.yaml
