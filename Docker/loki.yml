@@ -2,7 +2,6 @@ auth_enabled: false
 
 server:
   http_listen_port: 3100
-  # grpc_listen_port: 9096
 
 common:
   path_prefix: /loki
@@ -12,26 +11,25 @@ common:
       rules_directory: /loki/rules
   replication_factor: 1
   ring:
-    # instance_addr: 127.0.0.1
     kvstore:
       store: inmemory
 
 schema_config:
   configs:
     - from: 2020-10-24
-      store: boltdb-shipper
+      store: tsdb
       object_store: filesystem
-      schema: v11
+      schema: v13
       index:
         prefix: index_
         period: 24h
 
 # https://github.com/grafana/loki/issues/5123
-query_scheduler:
-  max_outstanding_requests_per_tenant: 10000
+# query_scheduler:
+#   max_outstanding_requests_per_tenant: 10000
 
-frontend:
-  max_outstanding_per_tenant: 10000  
+# frontend:
+#   max_outstanding_per_tenant: 10000  
 
 # ruler:
 #   alertmanager_url: http://localhost:9093

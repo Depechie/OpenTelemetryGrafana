@@ -1,3 +1,4 @@
+#https://github.com/grafana/docker-otel-lgtm/blob/main/docker/grafana-datasources.yaml
 #https://grafana.com/docs/grafana/latest/administration/provisioning/
 apiVersion: 1
 
@@ -23,6 +24,14 @@ datasources:
   isDefault: false
   version: 1
   editable: false
+  # jsonData:
+  #   tracesToLogsV2:
+  #     customQuery: true
+  #     datasourceUid: 'loki'
+  #     query: '{$${__tags}} | trace_id = "$${__trace.traceId}"'
+  #     tags:
+  #       - key: 'service.name'
+  #         value: 'service_name'
 
 - name: Loki
   type: loki
@@ -35,7 +44,9 @@ datasources:
   editable: false
   jsonData:
     derivedFields:
-      - datasourceUid: tempo
-        matcherRegex: "\u0022traceid\u0022:\u0022(\\w+)\u0022"
-        name: TraceId
-        url: '$${__value.raw}'
+        - name: 'trace_id'
+          matcherType: 'label'
+          matcherRegex: 'trace_id'
+          url: '$${__value.raw}'
+          datasourceUid: 'tempo'
+          urlDisplayLabel: 'Tempo'
