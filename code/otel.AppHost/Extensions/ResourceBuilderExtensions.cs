@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 public static class ResourceBuilderExtensions
 {
     private const string DashboardOtlpUrlVariableName = "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL";
-    private const string DashboardOtlpUrlDefaultValue = "http://localhost:18889";
+    // private const string DashboardOtlpUrlDefaultValue = "http://localhost:18889";
 
     // Adds the dashboard OTLP endpoint URL to the environment variables of the resource with the specified name.
     public static IResourceBuilder<T> WithDashboardEndpoint<T>(this IResourceBuilder<T> builder, string name)
@@ -24,7 +24,7 @@ public static class ResourceBuilderExtensions
                 return;
             }
 
-            var url = configuration[DashboardOtlpUrlVariableName] ?? DashboardOtlpUrlDefaultValue;
+            var url = configuration[DashboardOtlpUrlVariableName]; // ?? DashboardOtlpUrlDefaultValue;
             context.EnvironmentVariables[name] = builder.Resource is ContainerResource
                 ? ReplaceLocalhostWithContainerHost(url, configuration)
                 : url;
@@ -42,12 +42,12 @@ public static class ResourceBuilderExtensions
             // if (context.PublisherName == "manifest")
             if (context.ExecutionContext.IsPublishMode)
             {
-                context.EnvironmentVariables[name] = $"{lokiEndpoint.Url}/loki/api/v1/push";
+                context.EnvironmentVariables[name] = $"{lokiEndpoint.Url}/otlp";
                 return;
             }
 
             // https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/lokiexporter#getting-started
-            var url = lokiEndpoint.Url + "/loki/api/v1/push";
+            var url = lokiEndpoint.Url + "/otlp";
 
             context.EnvironmentVariables[name] = builder.Resource is ContainerResource
             ? ReplaceLocalhostWithContainerHost(url, builder.ApplicationBuilder.Configuration)

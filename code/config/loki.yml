@@ -20,14 +20,7 @@ schema_config:
     - from: 2020-10-24
       store: tsdb
       object_store: filesystem
-      schema: v12
+      schema: v13
       index:
         prefix: index_
         period: 24h
-
-# https://github.com/grafana/loki/issues/5123
-query_scheduler:
-  max_outstanding_requests_per_tenant: 10000
-
-frontend:
-  max_outstanding_per_tenant: 10000

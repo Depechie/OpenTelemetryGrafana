@@ -2,6 +2,10 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: 0.0.0.0:4317
+      # http:
+      #   endpoint: 0.0.0.0:4318
+
   # prometheus:
   #   trim_metric_suffixes: true
   #   use_start_time_metric: true
@@ -24,7 +28,7 @@ exporters:
     endpoint: ${env:TEMPO_URL}
     tls:
       insecure: true
-  loki:
+  otlphttp/logs:
     endpoint: ${env:LOKI_URL}
     tls:
       insecure: true
@@ -39,7 +43,7 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [loki, otlp/dashboard, debug]
+      exporters: [otlphttp/logs, otlp/dashboard, debug]
     # metrics:
     #   receivers: [prometheus, otlp]
     #   processors: [batch]
