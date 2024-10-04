@@ -17,11 +17,8 @@ namespace otel.ServiceWorker;
 public class Worker: BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly IBus _rabbitMQBus;
-
     private static readonly ActivitySource _activitySource = new("Aspire.RabbitMQ.Client");
     private static readonly TextMapPropagator Propagator = new TraceContextPropagator();
-
     private readonly IServiceProvider _serviceProvider;
     private readonly ICatalogService _catalogService;
     private IConnection? _messageConnection;
@@ -30,22 +27,9 @@ public class Worker: BackgroundService
     public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider, ICatalogService catalogService)
     {
         _logger = logger;
-        // _rabbitMQBus = bus;
         _serviceProvider = serviceProvider;
         _catalogService = catalogService;
     }
-
-    // protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-    // {
-    //     _logger.LogInformation($"Awaiting messages...");
-
-    //     await _rabbitMQBus.ReceiveAsync<Cart>(Queue.Orders, (message, args) =>
-    //     {
-    //         _logger.LogInformation($"Message received location: {message.Id}");
-
-    //         Task.Run(() => { ProcessMessage(message, args); }, cancellationToken);
-    //     });
-    // }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -120,7 +104,7 @@ public class Worker: BackgroundService
     {
         activity?.SetTag("messaging.system", "rabbitmq");
         activity?.SetTag("messaging.destination_kind", "queue");
-        activity?.SetTag("messaging.rabbitmq.queue", "sample"); //TODO: Glenn - Queue name?
+        activity?.SetTag("messaging.rabbitmq.queue", "sample");
         activity?.SetTag("messaging.destination", string.Empty);
         activity?.SetTag("messaging.rabbitmq.routing_key", Queue.Orders);
     }
