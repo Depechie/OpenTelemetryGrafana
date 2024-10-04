@@ -74,22 +74,28 @@ public class Worker: BackgroundService
         Baggage.Current = parentContext.Baggage;
 
         using var activity = _activitySource.StartActivity($"{Queue.Orders} receive", ActivityKind.Consumer, parentContext.ActivityContext);
-        AddActivityTags(activity);
-        _logger.LogInformation($"Processing Order at: {DateTime.UtcNow}");
-
-        var jsonSpecified = Encoding.UTF8.GetString(args.Body.Span);
-        var item = JsonSerializer.Deserialize<Cart>(jsonSpecified);
-
-        _logger.LogInformation($"Message received: {item.Id}");
-        _logger.LogInformation($"Message received: {jsonSpecified}");
-
-        List<Task> tasks = new List<Task>();
-        foreach (var cartItem in item.Items)
+        if (activity is not null)
         {
-            tasks.Add(Task.Run(() => _catalogService.GetProduct(cartItem.Id)));
-        }
+            AddActivityTags(activity);
+            _logger.LogInformation($"Processing Order at: {DateTime.UtcNow}");
 
-        await Task.WhenAll(tasks);
+            var jsonSpecified = Encoding.UTF8.GetString(args.Body.Span);
+            var item = JsonSerializer.Deserialize<Cart>(jsonSpecified);
+            
+            if (item is not null)
+            {
+                _logger.LogInformation($"Message received: {item.Id}");
+                _logger.LogInformation($"Message received: {jsonSpecified}");
+
+                List<Task> tasks = new List<Task>();            
+                foreach (var cartItem in item.Items)
+                {
+                    tasks.Add(Task.Run(() => _catalogService.GetProduct(cartItem.Id)));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+        }
     }
 
     private IEnumerable<string> ExtractTraceContextFromBasicProperties(IBasicProperties props, string key)
@@ -99,7 +105,7 @@ public class Worker: BackgroundService
             if (props.Headers.TryGetValue(key, out var value))
             {
                 var bytes = value as byte[];
-                return new[] { Encoding.UTF8.GetString(bytes) };
+                return new[] { bytes is null ? "" : Encoding.UTF8.GetString(bytes) };
             }
         }
         catch (Exception ex)

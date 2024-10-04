@@ -21,6 +21,6 @@ public class CatalogService : ICatalogService
     public async Task<Product> GetProduct(Guid id)
     {
         var response = await _httpClient.GetStringAsync($"http://localhost:5251/items/{id}");
-        return JsonSerializer.Deserialize<Product>(response, _options);
+        return JsonSerializer.Deserialize<Product>(response, _options) ?? throw new Exception("Product not found");
     }
 }

@@ -5,8 +5,8 @@ namespace otel.QueueCommon;
 
 public class RabbitMQFactory
 {
-    private static IConnection _connection;
-    private static IModel _channel;
+    private static IConnection? _connection;
+    private static IModel? _channel;
 
     public static IBus CreateBus(IConnection connection)
     {

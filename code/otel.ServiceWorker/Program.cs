@@ -24,7 +24,7 @@ if(!string.IsNullOrWhiteSpace(otelEndpoint))
             options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.Grpc;
             options.ResourceAttributes = new Dictionary<string, object>
             {
-                ["service.name"] = builder.Configuration["OTEL_SERVICE_NAME"]
+                ["service.name"] = builder.Configuration["OTEL_SERVICE_NAME"] ?? string.Empty
             };
         });
     });
