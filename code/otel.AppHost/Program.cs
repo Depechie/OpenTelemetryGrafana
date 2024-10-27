@@ -31,7 +31,9 @@ var otel = builder
     .WithEnvironment("TEMPO_URL", tempo.GetEndpoint("otlp"))
     .WithDashboardEndpoint("DASHBOARD_URL");
 
-var messaging = builder.AddRabbitMQ("messaging");
+var messaging = builder.AddRabbitMQ("messaging")
+    .WithManagementPlugin()
+    .PublishAsContainer();
 
 var basketAPI = builder.AddProject<Projects.otel_Basket_API>("basket-api")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"))
