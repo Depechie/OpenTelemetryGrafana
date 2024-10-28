@@ -37,14 +37,16 @@ var messaging = builder.AddRabbitMQ("messaging")
 
 var basketAPI = builder.AddProject<Projects.otel_Basket_API>("basket-api")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"))
-    .WithReference(messaging);
+    .WithReference(messaging)
+    .WaitFor(messaging);
 
 var catalogAPI = builder.AddProject<Projects.otel_Catalog_API>("catalog-api")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"));
 
 var serviceWorker = builder.AddProject<Projects.otel_ServiceWorker>("serviceworker")
     .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", otel.GetEndpoint("grpc"))
-    .WithReference(messaging);
+    .WithReference(messaging)
+    .WaitFor(messaging);
 
 builder
     .AddContainer("blackbox", "prom/blackbox-exporter", "v0.25.0")
