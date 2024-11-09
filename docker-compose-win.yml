@@ -69,7 +69,7 @@ services:
      
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.54.1
+    image: prom/prometheus:v2.55.1
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -92,7 +92,7 @@ services:
   # Tempo runs as user 10001, and docker compose creates the volume as root.
   # As such, we need to chown the volume in order for Tempo to start correctly.
   init:
-    image: &tempoImage grafana/tempo:2.6.0
+    image: &tempoImage grafana/tempo:2.6.1
     user: root
     entrypoint:
       - "chown"
@@ -122,7 +122,7 @@ services:
       
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:3.1.1
+    image: grafana/loki:3.2.1
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
@@ -140,7 +140,7 @@ services:
       
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:11.1.5
+    image: grafana/grafana:11.3.0
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -168,7 +168,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.108.0
+    image: otel/opentelemetry-collector-contrib:0.113.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./Docker/otel.yml:/etc/otel-collector-config.yaml
@@ -186,7 +186,7 @@ services:
       
   rabbitmq:
     # https://github.com/docker-library/rabbitmq
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:4.0.3-management-alpine
     container_name: rabbitmq
     restart: unless-stopped
     ports:
