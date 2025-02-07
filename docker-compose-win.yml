@@ -69,7 +69,7 @@ services:
      
   prometheus:
     # https://github.com/prometheus/prometheus/releases
-    image: prom/prometheus:v2.54.1
+    image: prom/prometheus:v3.1.0
     container_name: prometheus
     hostname: prometheus
     restart: unless-stopped
@@ -140,7 +140,7 @@ services:
       
   grafana:
     # https://github.com/grafana/grafana/releases
-    image: grafana/grafana:11.1.5
+    image: grafana/grafana:11.5.1
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -168,7 +168,7 @@ services:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
     container_name: otel
     hostname: otel
-    image: otel/opentelemetry-collector-contrib:0.108.0
+    image: otel/opentelemetry-collector-contrib:0.119.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./Docker/otel.yml:/etc/otel-collector-config.yaml
@@ -186,7 +186,7 @@ services:
       
   rabbitmq:
     # https://github.com/docker-library/rabbitmq
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:4-management-alpine
     container_name: rabbitmq
     restart: unless-stopped
     ports:
