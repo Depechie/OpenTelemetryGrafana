@@ -20,7 +20,7 @@ var tempo = builder
     .WithArgs("chown 10001:10001 /var/tempo");
 
 var otel = builder
-    .AddContainer("otel", "otel/opentelemetry-collector-contrib", "0.108.0")
+    .AddContainer("otel", "otel/opentelemetry-collector-contrib", "0.119.0")
     .WithEndpoint(targetPort: 4317, port: 4317,  name: "grpc", scheme: "http") // Have to put the schema to HTTP otherwise the C# will complain about the OTEL_EXPORTER_OTLP_ENDPOINT variable
     .WithEndpoint(targetPort: 55679, port: 9200, name: "zpages", scheme: "http")
     .WithEndpoint(targetPort: 8888, port: 8888,  name: "prometheus-services", scheme: "http")
@@ -54,7 +54,7 @@ builder
     .WithBindMount("../config/", "/etc/blackbox/")
     .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
 
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.54.1")
+var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v3.1.0")
     .WithEndpoint(targetPort: 9090, port: 9090, name: "http", scheme: "http")
     .WithBindMount("../config/prometheus.yml", "/etc/prometheus/prometheus.yml")
     .WithVolume("prometheus", "/prometheus")
@@ -64,7 +64,7 @@ var prometheus = builder.AddContainer("prometheus", "prom/prometheus", "v2.54.1"
     // .WithEnvironment("CATALOG_URL", catalogAPI.GetEndpoint("http"))
     // .WithArgs("--config.file=/etc/prometheus/prometheus.yml", "--enable-feature=expand-external-labels");
 
-builder.AddContainer("grafana", "grafana/grafana", "11.1.5")
+builder.AddContainer("grafana", "grafana/grafana", "11.5.1")
     .WithEndpoint(targetPort: 3000, port: 3000, name: "http", scheme: "http")
     .WithBindMount("../config/grafana/provisioning", "/etc/grafana/provisioning")
     .WithVolume("grafana-data", "/var/lib/grafana")
