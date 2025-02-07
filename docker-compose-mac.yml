@@ -97,7 +97,7 @@ services:
   # Tempo runs as user 10001, and docker compose creates the volume as root.
   # As such, we need to chown the volume in order for Tempo to start correctly.
   init:
-    image: &tempoImage grafana/tempo:2.6.0
+    image: &tempoImage grafana/tempo:2.6.1
     user: root
     entrypoint:
       - "chown"
@@ -128,7 +128,7 @@ services:
   
   loki:
     # https://github.com/grafana/loki/releases
-    image: grafana/loki:3.1.1
+    image: grafana/loki:3.2.1
     container_name: loki
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
