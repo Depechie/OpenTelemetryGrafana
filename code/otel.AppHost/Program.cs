@@ -11,7 +11,7 @@ var loki = builder
     .WithArgs("-config.file=/etc/loki/local-config.yaml");
 
 var tempo = builder
-    .AddContainer("tempo", "grafana/tempo", "2.6.0")
+    .AddContainer("tempo", "grafana/tempo", "2.7.0")
     .WithEndpoint(targetPort: 3200, port: 3200, name: "http", scheme: "http")
     .WithEndpoint(targetPort: 4317, port: 4007, name: "otlp", scheme: "http")
     .WithBindMount("../config/tempo.yml", "/etc/tempo.yaml")
