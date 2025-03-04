@@ -3,10 +3,10 @@ using otel.AppHost;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var messaging = builder.AddRabbitMQ("messaging")
-    .WithManagementPlugin()
+    // .WithManagementPlugin()
     .PublishAsContainer();
 
-var otellgtm = builder.AddContainer("otel-lgtm", "grafana/otel-lgtm", "0.8.5")
+var otellgtm = builder.AddContainer("otel-lgtm", "grafana/otel-lgtm", "0.8.6")
     .WithEndpoint(targetPort: 4317, port: 4317,  name: "grpc", scheme: "http") // Have to put the schema to HTTP otherwise the C# will complain about the OTEL_EXPORTER_OTLP_ENDPOINT variable
     .WithEndpoint(targetPort: 3000, port: 3000, name: "http", scheme: "http")
     .WithBindMount("../config/otel.yml", "/otel-lgtm/otelcol-config.yaml")
