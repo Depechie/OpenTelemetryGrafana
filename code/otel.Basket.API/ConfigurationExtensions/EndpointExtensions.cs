@@ -52,6 +52,9 @@ public static class EndpointExtensions
         if (!_carts.TryGetValue(cartId, out Cart cart))
             return TypedResults.NotFound();
 
+        if (messageConnection == null)
+            return TypedResults.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
         // https://www.rabbitmq.com/client-libraries/dotnet-api-guide#connection-and-channel-lifespan
         using var messageChannel = await messageConnection.CreateChannelAsync();
         await messageChannel.QueueDeclareAsync(Queue.Orders, durable: true, exclusive: false, autoDelete: false);
