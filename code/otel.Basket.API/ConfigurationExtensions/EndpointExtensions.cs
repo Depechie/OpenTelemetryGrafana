@@ -52,6 +52,7 @@ public static class EndpointExtensions
         if (!_carts.TryGetValue(cartId, out Cart cart))
             return TypedResults.NotFound();
 
+        // https://www.rabbitmq.com/client-libraries/dotnet-api-guide#connection-and-channel-lifespan
         using var messageChannel = await messageConnection.CreateChannelAsync();
         await messageChannel.QueueDeclareAsync(Queue.Orders, durable: true, exclusive: false, autoDelete: false);
 
