@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using otel.QueueCommon;
 using otel.ServiceWorker;
-using RabbitMQ.Client;
 using Serilog;
 
 // Log the startup information
@@ -10,7 +9,10 @@ var builder = Host.CreateApplicationBuilder(args);
 
 // Add Aspire
 builder.AddServiceDefaults();
-builder.AddRabbitMQClient(Bus.Host);
+builder.AddRabbitMQClient(Bus.Host, configureConnectionFactory: (connectionFactory) =>
+{
+    connectionFactory.ClientProvidedName = "app:event-consumer";
+});
 
 var otelEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
 
@@ -41,6 +43,7 @@ builder.Services.AddHostedService<Worker>();
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger>();
+
 logger.Information("Starting up...");
 logger.Information("OTEL_EXPORTER_OTLP_ENDPOINT: {endpoint}", otelEndpoint);
 
