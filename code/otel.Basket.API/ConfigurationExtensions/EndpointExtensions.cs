@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
@@ -16,8 +18,6 @@ public static class EndpointExtensions
 
     public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder app)
     {
-        // var rabbitMQBus = app.Services.GetService<IBus>();
-
         app.MapGet("/carts", GetCarts);
         app.MapPost("/carts", CreateCart);
         app.MapPost("/carts/{cartId}/items", AddItemToCart);
@@ -47,22 +47,31 @@ public static class EndpointExtensions
         return TypedResults.Created($"/carts/{cartId}/items", item);
     }
 
-    public static async Task<Results<Created<Cart>, NotFound, StatusCodeHttpResult>> Checkout(IBus rabbitMQBus, Guid cartId)
+    public static async Task<Results<Created<Cart>, NotFound, StatusCodeHttpResult>> Checkout(IConnection messageConnection, Guid cartId)
     {
         if (!_carts.TryGetValue(cartId, out Cart cart))
             return TypedResults.NotFound();
 
-        if (rabbitMQBus is null)
-            return TypedResults.StatusCode(503);
-        else
-        {
-            using var activity = _activitySource.StartActivity($"{Queue.Orders} publish", ActivityKind.Producer);
-            var basicProperties = rabbitMQBus.GetBasicProperties();
-            AddActivityToHeader(activity, basicProperties);            
-            await rabbitMQBus.SendAsync(Queue.Orders, cart, basicProperties);
-        }
+        if (messageConnection == null)
+            return TypedResults.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
-        // _carts.Remove(cartId);
+        // https://www.rabbitmq.com/client-libraries/dotnet-api-guide#connection-and-channel-lifespan
+        using var messageChannel = await messageConnection.CreateChannelAsync();
+        await messageChannel.QueueDeclareAsync(Queue.Orders, durable: true, exclusive: false, autoDelete: false);
+
+        using var activity = _activitySource.StartActivity($"{Queue.Orders} publish", ActivityKind.Producer);
+        var properties = new BasicProperties();
+        properties.Persistent = true;
+        AddActivityToHeader(activity, properties);
+
+        var output = JsonSerializer.Serialize(cart);
+
+        await messageChannel.BasicPublishAsync(
+            exchange: string.Empty,
+            routingKey: Queue.Orders,
+            mandatory: true,
+            basicProperties: properties,
+            body: Encoding.UTF8.GetBytes(output));
 
         return TypedResults.Created($"/carts/{cartId}/checkout", cart);
     }

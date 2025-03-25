@@ -33,8 +33,10 @@ else
     builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
         .ReadFrom.Configuration(hostingContext.Configuration));
 
-builder.AddRabbitMQClient(Bus.Host);
-builder.Services.AddSingleton<IBus>(sp => RabbitMQFactory.CreateBus(sp.GetService<IConnection>()));
+builder.AddRabbitMQClient(Bus.Host, configureConnectionFactory: (connectionFactory) =>
+{
+    connectionFactory.ClientProvidedName = "app:event-producer";
+});
 
 var app = builder.Build();
 

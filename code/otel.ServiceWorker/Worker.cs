@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,7 +21,7 @@ public class Worker: BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ICatalogService _catalogService;
     private IConnection? _messageConnection;
-    private IModel? _messageChannel;
+    private IChannel? _messageChannel;
 
     public Worker(ILogger<Worker> logger, IServiceProvider serviceProvider, ICatalogService catalogService)
     {
@@ -33,23 +32,31 @@ public class Worker: BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        return Task.Factory.StartNew(() =>
+        return Task.Factory.StartNew(async () =>
         {
              _logger.LogInformation($"Awaiting messages...");
 
             string queueName = Queue.Orders;
 
             _messageConnection = _serviceProvider.GetRequiredService<IConnection>();
-            _messageChannel = _messageConnection.CreateModel();
-            _messageChannel.QueueDeclare(queueName, true, false, false);
+            _messageChannel = await _messageConnection.CreateChannelAsync();
+            await _messageChannel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
 
-            var consumer = new EventingBasicConsumer(_messageChannel);
-            consumer.Received += async (s, e) => await ProcessMessageAsync(s, e);
+            var consumer = new AsyncEventingBasicConsumer(_messageChannel);
+            consumer.ReceivedAsync += async (s, e) => await ProcessMessageAsync(s, e);
 
-            _messageChannel.BasicConsume(queue: queueName,
+            await _messageChannel.BasicConsumeAsync(queue: queueName,
                                          autoAck: true,
                                          consumer: consumer);
         }, stoppingToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken);
+
+        _messageChannel?.Dispose();
+        _messageConnection?.Dispose();
     }
 
     private async Task ProcessMessageAsync(object? sender, BasicDeliverEventArgs args)
@@ -82,14 +89,15 @@ public class Worker: BackgroundService
         }
     }
 
-    private IEnumerable<string> ExtractTraceContextFromBasicProperties(IBasicProperties props, string key)
+    private IEnumerable<string> ExtractTraceContextFromBasicProperties(IReadOnlyBasicProperties props, string key)
     {
         try
         {
-            if (props.Headers.TryGetValue(key, out var value))
+            if (props.Headers != null && 
+                props.Headers.TryGetValue(key, out var value) && 
+                value is byte[] bytes)
             {
-                var bytes = value as byte[];
-                return new[] { bytes is null ? "" : Encoding.UTF8.GetString(bytes) };
+                return new[] { Encoding.UTF8.GetString(bytes) };
             }
         }
         catch (Exception ex)
