@@ -13,6 +13,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using QueueCommon;
 using QueueCommon.Models;
+using RabbitMQ.Client;
 using Serilog;
 
 namespace LocationAPI
@@ -48,8 +49,7 @@ namespace LocationAPI
                 }));
 
             builder.Services.AddRouting(options => options.LowercaseUrls = true);
-
-            builder.Services.AddSingleton(sp => RabbitMQFactory.CreateBus(BusType.DockerNetworkHost));
+            builder.Services.AddSingleton<IConnection>(sp => RabbitMQFactory.CreateConnection(BusType.DockerNetworkHost, "app:opentelemetrygrafana component:event-producer").GetAwaiter().GetResult());
 
             Action<ResourceBuilder> appResourceBuilder =
                 resource => resource

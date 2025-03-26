@@ -1,9 +1,8 @@
-﻿using System.Threading;
+﻿﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using QueueCommon;
-using QueueCommon.Models.Interfaces;
 using QueueCommon.Models;
 using System.Diagnostics;
 using OpenTelemetry.Context.Propagation;
@@ -14,13 +13,15 @@ using System;
 using RabbitMQ.Client;
 using System.Linq;
 using RabbitMQ.Client.Events;
+using System.Text.Json;
 
 namespace ServiceWorker
 {
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private readonly IBus _bus;
+        private IConnection _connection;
+        private IChannel _channel;
 
         //Important: The name of the Activity should be the same as the name of the Source added in the Web API startup AddOpenTelemetryTracing Builder
         private static readonly ActivitySource Activity = new("APITracing");
@@ -29,18 +30,49 @@ namespace ServiceWorker
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _bus = RabbitMQFactory.CreateBus(BusType.DockerNetworkHost);
         }
-
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        
+        private async Task InitializeAsync()
         {
-            await _bus.ReceiveAsync<LocationRequest>(QueueType.Processing, (message, args) =>
-            {
-                Task.Run(() => { ProcessMessage(message, args); }, cancellationToken);
-            });
+            if (_connection is null)
+                _connection = await RabbitMQFactory.CreateConnection(BusType.DockerNetworkHost, "app:opentelemetrygrafana component:event-consumer");
+            if (_channel is null)
+                _channel = await _connection.CreateChannelAsync();
         }
 
-        private void ProcessMessage(LocationRequest message, BasicDeliverEventArgs args)
+        protected override Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            return Task.Factory.StartNew(async () =>
+            {
+                await InitializeAsync();
+
+                _logger.LogInformation($"Awaiting messages...");
+
+                string queueName = QueueType.Processing;
+
+                await _channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+
+                var consumer = new AsyncEventingBasicConsumer(_channel);
+                consumer.ReceivedAsync += async (sender, args) =>
+                {
+                    await ProcessMessage(sender, args);
+                };
+
+                await _channel.BasicConsumeAsync(queue: queueName,
+                                            autoAck: true,
+                                            consumer: consumer);
+            }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+        }
+
+        override public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            await base.StopAsync(cancellationToken);
+
+            await _channel.DisposeAsync();
+            await _connection.DisposeAsync();
+        }
+
+        private async Task ProcessMessage(object? sender, BasicDeliverEventArgs args)
         {
             var parentContext = Propagator.Extract(default, args.BasicProperties, ExtractTraceContextFromBasicProperties);
             Baggage.Current = parentContext.Baggage;
@@ -48,17 +80,25 @@ namespace ServiceWorker
             using (var activity = Activity.StartActivity("Process Message", ActivityKind.Consumer, parentContext.ActivityContext))
             {
                 AddActivityTags(activity);
-                _logger.LogInformation($"Message received location: {message.Latitude} - {message.Longitude}");
+
+                var jsonSpecified = Encoding.UTF8.GetString(args.Body.Span);
+                var message = JsonSerializer.Deserialize<LocationRequest>(jsonSpecified);
+                
+                if (message is not null)
+                {
+                    _logger.LogInformation($"Message received location: {message.Latitude} - {message.Longitude}");
+                }
             }
         }
 
-        private IEnumerable<string> ExtractTraceContextFromBasicProperties(IBasicProperties props, string key)
+        private IEnumerable<string> ExtractTraceContextFromBasicProperties(IReadOnlyBasicProperties props, string key)
         {
             try
             {
-                if (props.Headers.TryGetValue(key, out var value))
+                if (props.Headers != null && 
+                    props.Headers.TryGetValue(key, out var value) && 
+                    value is byte[] bytes)
                 {
-                    var bytes = value as byte[];
                     return new[] { Encoding.UTF8.GetString(bytes) };
                 }
             }

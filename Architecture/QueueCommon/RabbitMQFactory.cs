@@ -1,5 +1,4 @@
 ﻿using QueueCommon.Models;
-using QueueCommon.Models.Interfaces;
 using RabbitMQ.Client;
 
 namespace QueueCommon;
@@ -8,14 +7,12 @@ public class RabbitMQFactory
 {
     private static ConnectionFactory _factory;
     private static IConnection _connection;
-    private static IModel _channel;
 
-    public static IBus CreateBus(string hostName)
+    public static async Task<IConnection> CreateConnection(string hostName, string ClientProviderName)
     {
-        _factory = new ConnectionFactory() { HostName = hostName, DispatchConsumersAsync = true };
-        _connection = _factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        _factory = new ConnectionFactory() { HostName = hostName, ClientProvidedName = ClientProviderName };
+        _connection = await _factory.CreateConnectionAsync();
 
-        return new RabbitMQBus(_channel);
+        return _connection;
     }
 }

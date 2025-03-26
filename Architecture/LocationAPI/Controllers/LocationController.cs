@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LocationAPI.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
 using QueueCommon.Models;
-using QueueCommon.Models.Interfaces;
 using RabbitMQ.Client;
 
 namespace LocationAPI.Controllers
@@ -18,32 +19,42 @@ namespace LocationAPI.Controllers
     public class LocationController : ControllerBase
     {
         private readonly ILogger<LocationController> _logger;
-        private readonly IBus _bus;
+        private readonly IConnection _connection;
 
         //Important: The name of the Activity should be the same as the name of the Source added in the Web API startup AddOpenTelemetryTracing Builder
         private static readonly ActivitySource Activity = new("APITracing");
         private static readonly TextMapPropagator Propagator = Propagators.DefaultTextMapPropagator;
 
-        public LocationController(ILogger<LocationController> logger, IBus bus)
+        public LocationController(ILogger<LocationController> logger, IConnection connection)
         {
             _logger = logger;
-            _bus = bus;
+            _connection = connection;
         }
 
         [HttpGet]
         public async Task<Location> Get(double latitude, double longitude)
         {
-            using (var activity = Activity.StartActivity("RabbitMq Publish", ActivityKind.Producer))
-            {
-                var basicProperties = _bus.GetBasicProperties();
-                AddActivityToHeader(activity, basicProperties);
+            // https://www.rabbitmq.com/client-libraries/dotnet-api-guide#connection-and-channel-lifespan
+            using var messageChannel = await _connection.CreateChannelAsync();
+            await messageChannel.QueueDeclareAsync(QueueType.Processing, durable: true, exclusive: false, autoDelete: false);
+            using var activity = Activity.StartActivity("RabbitMq Publish", ActivityKind.Producer);
 
-                await _bus.SendAsync(QueueType.Processing, new LocationRequest()
-                {
-                    Latitude = latitude,
-                    Longitude = longitude
-                }, basicProperties);
-            }
+            var properties = new BasicProperties();
+            properties.Persistent = true;
+            AddActivityToHeader(activity, properties);
+
+            var output = JsonSerializer.Serialize(new LocationRequest()
+            {
+                Latitude = latitude,
+                Longitude = longitude
+            });
+
+            await messageChannel.BasicPublishAsync(
+                exchange: string.Empty,
+                routingKey: QueueType.Processing,
+                mandatory: true,
+                basicProperties: properties,
+                body: Encoding.UTF8.GetBytes(output));
 
             return new Location()
             {
