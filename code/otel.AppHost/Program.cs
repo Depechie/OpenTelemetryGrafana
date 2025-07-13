@@ -6,7 +6,7 @@ var messaging = builder.AddRabbitMQ("messaging")
     .WithManagementPlugin()
     .PublishAsContainer();
 
-var otellgtm = builder.AddContainer("otel-lgtm", "grafana/otel-lgtm", "0.11.3")
+var otellgtm = builder.AddContainer("otel-lgtm", "grafana/otel-lgtm", "0.11.5")
     .WithEndpoint(targetPort: 4317, port: 4317,  name: "grpc", scheme: "http") // Have to put the schema to HTTP otherwise the C# will complain about the OTEL_EXPORTER_OTLP_ENDPOINT variable
     .WithEndpoint(targetPort: 3000, port: 3000, name: "http", scheme: "http")
     .WithBindMount("../config/otel.yml", "/otel-lgtm/otelcol-config.yaml")
@@ -28,7 +28,7 @@ var serviceWorker = builder.AddProject<Projects.otel_ServiceWorker>("servicework
     .WaitFor(messaging);
 
 builder
-    .AddContainer("blackbox", "prom/blackbox-exporter", "v0.26.0")
+    .AddContainer("blackbox", "prom/blackbox-exporter", "v0.27.0")
     .WithEndpoint(targetPort: 9115, port: 9115, name: "http", scheme: "http")
     .WithBindMount("../config/", "/etc/blackbox/")
     .WithArgs("--config.file=/etc/blackbox/blackbox.yml");
