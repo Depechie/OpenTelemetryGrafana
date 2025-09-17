@@ -73,7 +73,7 @@ services:
 
   otel-lgtm:
     # https://github.com/grafana/docker-otel-lgtm/releases
-    image: grafana/otel-lgtm:0.11.5
+    image: grafana/otel-lgtm:0.11.10
     container_name: otel-lgtm
     ports:
       - 3000:3000
