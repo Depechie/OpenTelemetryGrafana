@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.RabbitMQ.Client.v7" Version="9.3.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
+    <PackageReference Include="Aspire.RabbitMQ.Client.v7" Version="9.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
