@@ -1,6 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0" />
+<Project Sdk="Aspire.AppHost.Sdk/13.1.1">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -11,8 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-      <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.2" />
-      <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="9.4.2" />
+      <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.1" />
   </ItemGroup>
 
   <ItemGroup>
