@@ -1,0 +1,469 @@
+name: aspire-init-eval
+description: "Evaluates the aspire-init skill for correct first-run guidance: choosing between
+  `aspire new` and `aspire init`, dropping the skeleton, handing off to `aspireify` for wiring, and
+  never re-initializing a repo that already has an AppHost."
+version: "1.0"
+type: capability
+tags:
+  skill: aspire-init
+defaults:
+  runs: 3
+  # Per-trial wall-clock budget. Kept generous because runs >= 2 disables
+  # vally's timeout/rate-limit retries, so one slow trial would hard-fail the
+  # whole eval (evalHadExecutionErrors) even when the aggregate score passes.
+  timeout: 600s
+  executor: copilot-sdk
+  model: gpt-5-mini
+scoring:
+  # Score each stimulus by the weighted share of graders that pass, then gate on
+  # the aggregate (>= threshold) instead of demanding every grader pass on every
+  # trial. This absorbs gpt-5-mini nondeterminism and graders that look for code
+  # tokens the agent writes into edited files rather than its chat message;
+  # genuine regressions still drag the aggregate below the bar.
+  threshold: 0.7
+environment:
+  # vally 0.8.0 loads no skills unless declared here (paths resolve relative to
+  # this eval file). Load aspire-init plus its transitive in-repo dependencies:
+  # init hands off to aspireify, which in turn validates via aspire-orchestration.
+  skills:
+    - ../../aspire-init
+    - ../../aspireify
+    - ../../aspire-orchestration
+stimuli:
+  - name: init-cli-install-001
+    prompt: I tried `aspire init` but it says command not found. How do I install the Aspire CLI?
+    tags:
+      priority: p1
+      area: prerequisites
+    graders:
+      - type: prompt
+        name: suggests_supported_install
+        config:
+          prompt: Does the assistant's response suggest at least one of the two supported Aspire CLI install
+            paths in 13.3? (1) `dotnet tool install -g Aspire.Cli` — the NativeAOT .NET 10 global
+            tool, OR (2) `curl -sSL https://aspire.dev/install.sh | bash` — the curl installer.
+            Either is acceptable; ideally the response mentions both and notes that the global-tool
+            path requires .NET 10.
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+        name: no_obsolete_workload
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install Aspire
+      - type: prompt
+        name: mentions_doctor_or_prereqs
+        config:
+          prompt: After installing the CLI, does the assistant's response also tell the user how to verify the
+            install (for example, `aspire doctor`, `aspire --version`, or re-running `aspire init`)?
+            Light mention is acceptable.
+      - type: output-contains
+        config:
+          substring: Aspire.Cli
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+        name: never_dotnet_new_aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+  - name: init-skip-001
+    prompt: Set up Aspire in this project.
+    tags:
+      priority: p0
+      area: safety-guardrail
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: detects_existing_apphost
+        config:
+          prompt: The assistant's response should detect that an AppHost already exists in the repo (the
+            `.csproj` references `Aspire.AppHost.Sdk` and `aspire.config.json` is present) and
+            explicitly say `aspire init` is NOT needed.
+      - type: prompt
+        name: routes_to_correct_skill
+        config:
+          prompt: The assistant's response should route the user to either `aspireify` (for adding/changing
+            resources in the existing AppHost) or `aspire-orchestration` (for starting and managing
+            the running AppHost).
+      - type: output-not-contains
+        config:
+          substring: Run `aspire init`
+        name: no_init_or_new
+      - type: output-not-contains
+        config:
+          substring: run aspire init
+      - type: output-not-contains
+        config:
+          substring: run `aspire new`
+      - type: output-not-contains
+        config:
+          substring: aspire init
+      - type: output-not-contains
+        config:
+          substring: aspire new
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+        name: never_dotnet_new_aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+  - name: init-existing-001
+    prompt: Add Aspire to this repository so I can orchestrate my Express frontend and .NET API.
+    tags:
+      priority: p0
+      area: core-flow
+    graders:
+      - type: prompt
+        name: runs_aspire_init
+        config:
+          prompt: Does the assistant's response recommend running `aspire init` (not `aspire new`) to
+            bootstrap the existing repository? It should pick init because the repo already contains
+            services. Answer based on intent, not exact string matching.
+      - type: prompt
+        name: hands_off_to_aspireify
+        config:
+          prompt: Does the assistant's response explicitly hand off the resource-wiring step to the
+            `aspireify` skill (or the project-local `aspireify` skill installed by `aspire init`)?
+            It should make clear that `aspire init` only drops the skeleton plus
+            `aspire.config.json` and that wiring is `aspireify`'s job.
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+        name: no_obsolete_workload
+      - type: output-contains
+        config:
+          substring: aspire init
+      - type: output-contains
+        config:
+          substring: aspireify
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+        name: never_dotnet_new_aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+  - name: init-new-001
+    prompt: I'm starting a brand-new distributed app from scratch. Scaffold an Aspire starter project
+      for me.
+    tags:
+      priority: p0
+      area: core-flow
+    graders:
+      - type: prompt
+        name: uses_aspire_new
+        config:
+          prompt: Does the assistant's response recommend `aspire new aspire-starter` (or a similar `aspire
+            new` template) to scaffold a brand-new project? Answer based on intent.
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-starter
+        name: no_dotnet_new_template
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-empty
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-ts-starter
+      - type: prompt
+        name: no_init_for_greenfield
+        config:
+          prompt: For a brand-new, empty project, the assistant's response should pick `aspire new` rather
+            than `aspire init`. The `aspire init` command is for existing repositories that already
+            contain services. Does the response correctly avoid suggesting `aspire init` for this
+            greenfield scenario? Answer based on intent.
+      - type: output-contains
+        config:
+          substring: aspire new
+      - type: output-contains
+        config:
+          substring: aspire-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+        name: never_dotnet_new_aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+  - name: init-py-001
+    prompt: Scaffold an Aspire FastAPI + React Python starter, and please include Redis.
+    tags:
+      priority: p0
+      area:
+        - core-flow
+        - 13.3-breaking
+    graders:
+      - type: prompt
+        name: uses_aspire_new_py_starter
+        config:
+          prompt: Does the assistant's response use `aspire new aspire-py-starter` (the Aspire 13.3 path) and
+            NOT `dotnet new aspire-py-starter` (which was removed in 13.3)? It should also explain
+            that the AppHost will be TypeScript and orchestrates the Python service.
+      - type: prompt
+        name: includes_redis_flag
+        config:
+          prompt: Since the user asked for Redis, the assistant's response should include the
+            `--use-redis-cache true` template option (or note that this option exists for the
+            py-starter template).
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+        name: no_dotnet_new
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py
+      - type: output-contains
+        config:
+          substring: aspire new aspire-py-starter
+      - type: output-contains
+        config:
+          substring: --use-redis-cache
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-py-starter
+        name: never_dotnet_new_aspire
+      - type: output-not-contains
+        config:
+          substring: dotnet new aspire-starter
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install aspire
+  - name: should_trigger_01
+    description: "Reason: Existing repo without AppHost — first-run init flow"
+    # Phrased as a question so the agent routes/advises instead of running a slow
+    # `aspire new` template restore to completion (which can exceed the timeout).
+    prompt: What's the first thing I should do to add Aspire to this Express + .NET API repo?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_02
+    description: "Reason: Brand-new project — aspire new template selection"
+    # Question phrasing: an imperative makes the executor run the interactive scaffolder
+    # (`aspire new`), which blocks and times out the trial; the skill-invocation grader
+    # only checks routing, so intent is unchanged.
+    prompt: How do I scaffold a new Aspire app from scratch?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_03
+    description: "Reason: Bootstrap = aspire init/new flow"
+    prompt: Bootstrap Aspire into this directory
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_04
+    description: "Reason: Direct template scaffold request"
+    # Question phrasing: an imperative makes the executor run the interactive scaffolder
+    # (`aspire new`), which blocks and times out the trial; the skill-invocation grader
+    # only checks routing, so intent is unchanged.
+    prompt: How do I run aspire new aspire-starter to create a new project?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_05
+    description: "Reason: Direct init request on existing repo"
+    # Question phrasing: an imperative makes the executor run interactive `aspire init`,
+    # which blocks and times out the trial; the skill-invocation grader only checks
+    # routing, so intent is unchanged.
+    prompt: How do I run aspire init in this repo?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_06
+    description: "Reason: Existing Python repo needing AppHost — aspire init or aspire-py-starter"
+    prompt: Bootstrap Aspire into my FastAPI project
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_07
+    description: "Reason: Greenfield TS AppHost — aspire new aspire-ts-starter"
+    # Question phrasing: an imperative makes the executor run the interactive scaffolder
+    # (`aspire new`), which blocks and times out the trial; the skill-invocation grader
+    # only checks routing, so intent is unchanged.
+    prompt: How do I create a new Aspire TypeScript starter app?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_trigger_08
+    description: "Reason: aspireify is installed via aspire init / aspire agent init — init flow owns it"
+    prompt: How do I install the aspireify skill via aspire init?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_init
+        config:
+          required:
+            - aspire-init
+  - name: should_not_trigger_01
+    description: "Reason: App lifecycle routes to aspire-orchestration"
+    # Question phrasing: an imperative makes the executor launch a foreground app run
+    # that never returns, timing out the trial; the skill-invocation grader only checks
+    # routing, so intent is unchanged.
+    prompt: How do I start my Aspire app?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init
+  - name: should_not_trigger_02
+    description: "Reason: Deployment routes to aspire-deployment"
+    prompt: Deploy my Aspire app to Azure
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init
+  - name: should_not_trigger_03
+    description: "Reason: Logs route to aspire-monitoring"
+    prompt: Show me logs for my Aspire app
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init
+  - name: should_not_trigger_04
+    description: "Reason: Resource wiring on an existing AppHost routes to aspireify, not aspire-init"
+    prompt: Wire up my existing AppHost with new resources
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init
+  - name: should_not_trigger_05
+    description: "Reason: aspire add on an existing AppHost routes to aspireify"
+    prompt: Add a Redis integration to my AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init
+  - name: should_not_trigger_06
+    description: "Reason: Resource lifecycle routes to aspire-orchestration"
+    prompt: Restart my database resource
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init
+  - name: should_not_trigger_07
+    description: "Reason: aspire wait routes to aspire-orchestration"
+    # Question phrasing: an imperative makes the executor run blocking `aspire wait`,
+    # which hangs until the resource is ready and times out the trial; the
+    # skill-invocation grader only checks routing, so intent is unchanged.
+    prompt: How do I wait for my API to be ready?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_init
+        config:
+          disallowed:
+            - aspire-init

@@ -1,0 +1,1146 @@
+name: aspire-orchestration-eval
+description: Evaluates the aspire-orchestration skill against the 5 core complaints from
+  microsoft/aspire#15801 plus detection, worktree, and agent-mode scenarios.
+version: "1.0"
+type: capability
+tags:
+  skill: aspire-orchestration
+defaults:
+  runs: 3
+  # Per-trial wall-clock budget. Kept generous because runs >= 2 disables
+  # vally's timeout/rate-limit retries, so one slow trial would hard-fail the
+  # whole eval (evalHadExecutionErrors) even when the aggregate score passes.
+  timeout: 600s
+  executor: copilot-sdk
+  model: gpt-5-mini
+scoring:
+  # Score each stimulus by the weighted share of graders that pass, then gate on
+  # the aggregate (>= threshold) instead of demanding every grader pass on every
+  # trial. This absorbs gpt-5-mini nondeterminism and graders that look for code
+  # tokens the agent writes into edited files rather than its chat message;
+  # genuine regressions still drag the aggregate below the bar.
+  threshold: 0.7
+environment:
+  # vally 0.8.0 loads no skills unless declared here (paths resolve relative to
+  # this eval file). aspire-orchestration is self-contained (INVOKES only the
+  # aspire CLI), so it loads on its own.
+  skills:
+    - ../../aspire-orchestration
+stimuli:
+  - name: orch-update-self-001
+    prompt: How do I upgrade my Aspire CLI to the latest 13.3?
+    tags:
+      priority: p1
+      area:
+        - aspire-13-3
+        - update
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_update_self
+        config:
+          prompt: Does the assistant's response recommend `aspire update --self` to upgrade the Aspire CLI
+            itself? This is the safe, no-side-effect upgrade path that an agent can run unattended.
+      - type: prompt
+        name: distinguishes_project_update
+        config:
+          prompt: Does the assistant's response distinguish `aspire update --self` (CLI upgrade) from bare
+            `aspire update` (which modifies project package references and `aspire.config.json`)? It
+            should warn that bare `aspire update` edits project files and therefore should be run
+            with user approval rather than unattended.
+      - type: output-not-contains
+        config:
+          substring: automatically run aspire update
+        name: never_runs_project_update_unattended
+      - type: output-not-contains
+        config:
+          substring: run aspire update without confirmation
+      - type: output-contains
+        config:
+          substring: aspire update --self
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-aspireify-001
+    prompt: I just ran `aspire init` in my existing Node.js + .NET repo and it created an apphost.cs and
+      aspire.config.json. What's next? Wire up my services.
+    tags:
+      priority: p0
+      area:
+        - init-workflow
+        - aspireify-handoff
+    environment:
+      files:
+        - src: ../../../evals/non-aspire/MyApp/MyApp.csproj
+          dest: non-aspire/MyApp/MyApp.csproj
+        - src: ../../../evals/non-aspire/MyApp/Program.cs
+          dest: non-aspire/MyApp/Program.cs
+    graders:
+      - type: prompt
+        name: hands_off_to_aspireify
+        config:
+          prompt: Does the assistant's response explicitly hand the AppHost wiring step off to the `aspireify`
+            skill (in-plugin sibling at `../aspireify/SKILL.md`, OR the project-local
+            `.agents/skills/aspireify/SKILL.md` if installed by `aspire init`)? The orchestration
+            skill itself should defer scanning the repo, choosing resources, and editing the AppHost
+            to aspireify. Answer based on intent.
+      - type: prompt
+        name: mentions_project_local_precedence
+        config:
+          prompt: Does the assistant's response acknowledge that if a project-local
+            `.agents/skills/aspireify/SKILL.md` exists, the agent should defer to it (with a warning
+            to the user) instead of using the in-plugin sibling?
+      - type: output-not-contains
+        config:
+          substring: I'll write the AppHost
+        name: never_handauthors_apphost
+      - type: output-not-contains
+        config:
+          substring: Let me edit apphost.cs
+      - type: output-not-contains
+        config:
+          substring: I'll add AddProject
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-cleanup-001
+    prompt: I'm done working on this feature, what should I do to clean up?
+    tags:
+      priority: p0
+      area:
+        - safety-guardrail
+        - issue-15801
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_stop
+        config:
+          prompt: Does the assistant's response recommend using 'aspire stop' (or an equivalent Aspire CLI
+            cleanup command) to stop the running application? Answer based on the intent, not exact
+            string matching.
+      - type: prompt
+        name: explains_cleanup
+        config:
+          prompt: The assistant's response should recommend running 'aspire stop' and explain that leaving
+            Aspire running causes port conflicts, file locks, and resource waste.
+      - type: output-contains
+        config:
+          substring: aspire stop
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-detect-001
+    prompt: Help me understand this project structure
+    tags:
+      priority: p1
+      area: detection
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: identifies_aspire
+        config:
+          prompt: The assistant's response should identify this as an Aspire project based on the
+            Aspire.AppHost.Sdk reference in the csproj file. It should mention using aspire CLI
+            commands rather than standard dotnet commands.
+      - type: output-contains
+        config:
+          substring: Aspire
+      - type: output-contains
+        config:
+          substring: AppHost
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-detect-filebased-001
+    prompt: How do I run this app?
+    tags:
+      priority: p0
+      area: detection
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+    graders:
+      - type: prompt
+        name: recognizes_aspire
+        config:
+          prompt: Does the assistant's response recognize this as an Aspire project and recommend using
+            'aspire start' or the Aspire CLI to run it, rather than 'dotnet run' or 'dotnet
+            apphost.cs'?
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet apphost.cs
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run_2
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-filelock-001
+    prompt: |-
+      I'm getting this error when trying to build:
+      error MSB3491: Could not write to output file 'bin/Debug/net10.0/MyService.dll'
+      error CS2012: Cannot open 'obj/Debug/net10.0/MyService.dll' for writing
+    tags:
+      priority: p0
+      area:
+        - error-recovery
+        - issue-15801
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: recognizes_aspire_locks
+        config:
+          prompt: The assistant's response should recognize that Aspire is holding file locks on the running
+            project and recommend either 'aspire stop' followed by rebuild, or 'aspire resource
+            <name> restart'.
+      - type: prompt
+        name: correct_recovery
+        config:
+          prompt: Does the assistant's response recommend using 'aspire stop' (or an equivalent Aspire CLI
+            command to stop the running instance) to resolve file lock errors? Answer based on the
+            intent, not exact string matching.
+      - type: output-not-contains
+        config:
+          substring: unbuildable
+        name: not_unbuildable
+      - type: output-not-contains
+        config:
+          substring: cannot be built
+      - type: output-contains
+        config:
+          substring: aspire stop
+      - type: output-not-contains
+        config:
+          substring: unbuildable
+      - type: output-not-contains
+        config:
+          substring: cannot be built
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-include-hidden-001
+    prompt: I added a YARP reverse proxy in front of my API in the AppHost, but `aspire ps` doesn't list
+      it. Did the AppHost wire it wrong?
+    tags:
+      priority: p1
+      area:
+        - aspire-13-3
+        - include-hidden
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: suggests_include_hidden
+        config:
+          prompt: Does the assistant's response recommend running `aspire ps --include-hidden` (or `aspire
+            describe --include-hidden`) BEFORE concluding that the AppHost is misconfigured? Aspire
+            13.3 filters hidden resources (proxies, helper containers, migrations) by default, so a
+            missing-from-`aspire ps` resource may exist but be filtered, not actually missing.
+      - type: prompt
+        name: explains_default_filtering
+        config:
+          prompt: Does the assistant's response explain (or imply) that filtered output is the correct default
+            for normal workflows, and that `--include-hidden` is the diagnostic opt-in for debugging
+            proxies, sidecars, or migrations?
+      - type: output-contains
+        config:
+          substring: --include-hidden
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-init-001
+    prompt: I have an existing Express.js app and a .NET API. I want to add Aspire to orchestrate them
+      together.
+    tags:
+      priority: p0
+      area:
+        - init-workflow
+        - aspireify-handoff
+    environment:
+      files:
+        - src: ../../../evals/non-aspire/MyApp/MyApp.csproj
+          dest: non-aspire/MyApp/MyApp.csproj
+        - src: ../../../evals/non-aspire/MyApp/Program.cs
+          dest: non-aspire/MyApp/Program.cs
+    graders:
+      - type: prompt
+        name: uses_aspire_init
+        config:
+          prompt: Does the assistant's response recommend running `aspire init` to drop the AppHost skeleton
+            into the existing repository? Answer based on intent.
+      - type: output-not-contains
+        config:
+          substring: dotnet workload install
+        name: never_workload
+      - type: prompt
+        name: hands_off_to_aspireify
+        config:
+          prompt: After running `aspire init`, does the assistant's response hand the wiring step off to the
+            `aspireify` skill (the in-plugin sibling skill, or the project-local
+            `.agents/skills/aspireify/SKILL.md` installed by `aspire init` in 13.3)? The
+            orchestration skill should explicitly defer to `aspireify` for repo scanning, resource
+            selection, ServiceDefaults / OTel wiring, and validation.
+      - type: prompt
+        name: knows_workflow
+        config:
+          prompt: "Does the assistant's response describe (or reference, via aspireify) the wiring workflow:
+            scanning the repository, selecting services, adding resources to the AppHost using the
+            3-tier API preference (first-party Aspire.Hosting.* > Community Toolkit > raw
+            fallbacks), and validating with `aspire start`?"
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-sdk-001
+    prompt: My project uses .NET 8. Can I still use Aspire with it?
+    tags:
+      priority: p1
+      area:
+        - safety-guardrail
+        - init-workflow
+    graders:
+      - type: prompt
+        name: preserves_sdk
+        config:
+          prompt: Does the assistant's response confirm that Aspire works with existing .NET SDK versions and
+            that global.json plus existing project target frameworks should be left untouched? The
+            AppHost can use a newer SDK while orchestrating older services. Answer based on intent.
+      - type: output-not-contains
+        config:
+          substring: change global.json
+        name: never_modify_globaljson
+      - type: output-not-contains
+        config:
+          substring: update global.json
+      - type: output-not-contains
+        config:
+          substring: modify global.json
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-noninteractive-001
+    prompt: How should I run the Aspire app in my CI pipeline?
+    tags:
+      priority: p1
+      area: agent-mode
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_noninteractive
+        config:
+          prompt: Does the assistant's response recommend using the '--non-interactive' flag (or an equivalent
+            mechanism to prevent CLI prompts from hanging) when running Aspire in a CI pipeline?
+            Answer based on the intent, not exact string matching.
+      - type: output-contains
+        config:
+          substring: --non-interactive
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-rebuild-001
+    # Question phrasing that asks for the command: the prior wording led the executor to
+    # actually `dotnet run` the AppHost (a foreground daemon that never returns), timing
+    # out the trial. Asking which Aspire command elicits the recommended `aspire resource
+    # restart` guidance without launching the app.
+    prompt: I changed some code in the API service and my app is already running. How do I get my changes to show up — which Aspire command should I use?
+    tags:
+      priority: p0
+      area:
+        - safety-guardrail
+        - issue-15801
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_resource_restart
+        config:
+          prompt: Does the assistant's response recommend using 'aspire resource restart' (or an equivalent
+            Aspire CLI hot-reload/restart command) to apply code changes while the app is running?
+            Answer based on the intent, not exact string matching.
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+        name: never_dotnet_build
+      - type: prompt
+        name: mentions_file_locks
+        config:
+          prompt: The assistant's response should mention that 'dotnet build' would cause file lock errors
+            because Aspire holds locks on running projects. It should recommend using aspire
+            resource <name> restart instead.
+      - type: output-contains
+        config:
+          substring: aspire resource
+      - type: output-contains
+        config:
+          substring: restart
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-start-001
+    prompt: What's the recommended way to run my Aspire application for development?
+    tags:
+      priority: p0
+      area:
+        - safety-guardrail
+        - issue-15801
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_start
+        config:
+          prompt: Does the assistant's response recommend using 'aspire start' (or an equivalent Aspire CLI
+            start command) to launch the application for development? Answer based on the intent,
+            not exact string matching.
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: prompt
+        name: explains_why
+        config:
+          prompt: Does the assistant's response explain why 'aspire start' should be used instead of 'dotnet
+            run' for Aspire projects, mentioning that the Aspire CLI manages the full application
+            lifecycle including dependent resources?
+      - type: output-contains
+        config:
+          substring: aspire start
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run_2
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-tier-001
+    prompt: I need to add a Go HTTP service and a PostgreSQL database to my Aspire AppHost
+    tags:
+      priority: p1
+      area: init-workflow
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+    graders:
+      - type: prompt
+        name: correct_tiers
+        config:
+          prompt: Does the assistant's response use the correct integration tiers? PostgreSQL should use Tier
+            1 first-party Aspire.Hosting.PostgreSQL (AddPostgres). Go should use Tier 2
+            CommunityToolkit (AddGolangApp) or Tier 3 fallback (AddExecutable). The agent should
+            prefer higher tiers when available.
+      - type: prompt
+        name: uses_aspire_docs
+        config:
+          prompt: Does the assistant's response recommend looking up the API with aspire docs search or aspire
+            docs api search before writing AppHost code?
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-apidocs-001
+    prompt: I need to add a custom WithCommand to my AppHost resource but I'm not sure of the API signature
+    tags:
+      priority: p1
+      area: best-practice
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+    graders:
+      - type: prompt
+        name: uses_docs_api
+        config:
+          prompt: Does the assistant's response recommend using 'aspire docs search' or 'aspire docs api
+            search' to look up the WithCommand API before editing the AppHost code, rather than
+            guessing the API shape? Answer based on intent.
+      - type: prompt
+        name: uses_docs_first
+        config:
+          prompt: Does the assistant's response follow a docs-first pattern — looking up documentation or API
+            reference before making code changes to the AppHost?
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-wait-001
+    prompt: I need to call the API service but it might not be ready yet
+    tags:
+      priority: p0
+      area:
+        - safety-guardrail
+        - issue-15801
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_wait
+        config:
+          prompt: Does the assistant's response recommend using 'aspire wait' (or an equivalent Aspire CLI
+            readiness-check command) to wait for a resource to become ready, rather than manual HTTP
+            polling? Answer based on the intent, not exact string matching.
+      - type: output-not-contains
+        config:
+          substring: curl
+        name: no_polling
+      - type: output-not-contains
+        config:
+          substring: while true
+      - type: output-not-contains
+        config:
+          substring: time.sleep
+      - type: output-not-contains
+        config:
+          substring: Thread.Sleep
+      - type: output-contains
+        config:
+          substring: aspire wait
+      - type: output-not-contains
+        config:
+          substring: curl
+      - type: output-not-contains
+        config:
+          substring: while
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: health
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  - name: orch-worktree-001
+    # Phrased as a "what's the recommended way" question: the eval executor waits
+    # for the agent turn to go idle, but an imperative "start the app" makes the
+    # agent run `aspire start` — a foreground daemon that never returns (600s
+    # session.idle timeout). Asking for the recommended approach keeps the agent
+    # in explanatory mode; the --isolated guidance being tested is unchanged.
+    prompt: I'm working in a git worktree. What's the recommended way to start my Aspire app so it
+      doesn't collide with my main checkout's ports and local state?
+    tags:
+      priority: p1
+      area: best-practice
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_isolated
+        config:
+          prompt: Does the assistant's response recommend using the '--isolated' flag with 'aspire start' (or
+            an equivalent mechanism for port isolation) when running in a git worktree? Answer based
+            on the intent, not exact string matching.
+      - type: output-contains
+        config:
+          substring: --isolated
+      - type: output-contains
+        config:
+          substring: aspire start
+      - type: output-not-contains
+        config:
+          substring: dotnet run
+        name: never_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: dotnet build
+      - type: output-not-contains
+        config:
+          substring: while true
+        name: never_curl_polling
+      - type: output-not-contains
+        config:
+          substring: sleep
+      - type: output-not-contains
+        config:
+          substring: curl.*health
+  # Routing stimuli below are phrased as explanatory questions ("How do I run
+  # aspire start?") rather than bare imperatives ("Run aspire start"). The
+  # skill-invocation graders only verify that the prompt routes to
+  # aspire-orchestration; an imperative phrasing tempts the executor to actually
+  # run the foreground command (`aspire start`, `aspire wait`, running an
+  # apphost) which never returns, timing the trial out at `defaults.timeout` and
+  # tripping `evalHadExecutionErrors` — a hard gate failure independent of score.
+  - name: should_trigger_01
+    description: "Reason: aspire start request routes to orchestration"
+    prompt: How do I run aspire start on my AppHost?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_02
+    description: "Reason: Direct start request"
+    prompt: How do I start my Aspire app?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_03
+    description: "Reason: aspire stop is orchestration"
+    prompt: How do I run aspire stop to clean up?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_04
+    description: "Reason: Exact MSB3491 error code — file-lock recovery scenario"
+    prompt: I'm getting MSB3491 file lock errors building my Aspire project
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_05
+    description: "Reason: Exact CS2012 error code — file-lock recovery"
+    prompt: CS2012 — Cannot open file for writing while Aspire is running
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_06
+    description: "Reason: Single resource restart is orchestration"
+    prompt: How do I restart just the API service in Aspire?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_07
+    description: "Reason: Port conflict = orphaned Aspire instance — orchestration"
+    prompt: Port 5000 is already in use after I ran aspire start
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_08
+    description: "Reason: aspire wait is orchestration"
+    prompt: How do I run aspire wait on my postgres resource?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_09
+    description: "Reason: aspire update --self is orchestration (CLI lifecycle)"
+    prompt: How do I upgrade my Aspire CLI with aspire update --self?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_10
+    description: "Reason: Hidden-resource filtering = --include-hidden guidance lives in orchestration"
+    prompt: I see proxies missing in aspire ps — why?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_trigger_11
+    description: "Reason: File-based C# AppHost should trigger orchestration (start/run lifecycle)"
+    prompt: How do I run my apphost.cs file?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_orchestration
+        config:
+          required:
+            - aspire-orchestration
+  - name: should_not_trigger_01
+    description: "Reason: Deployment routes to aspire-deployment"
+    prompt: Deploy my Aspire app to Azure
+    tags:
+      priority: p1
+      area: routing
+    environment:
+      # Present the sibling this should route to (merges with the eval-level
+      # aspire-orchestration) so the agent has a correct home; otherwise, with
+      # only orchestration loaded, it grabs the sole Aspire skill available.
+      skills:
+        - ../../aspire-deployment
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_02
+    description: "Reason: Logs route to aspire-monitoring"
+    prompt: Show me the application logs
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_03
+    description: "Reason: Traces route to aspire-monitoring"
+    prompt: Check the distributed traces
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_04
+    description: "Reason: Publish routes to aspire-deployment"
+    prompt: Publish deployment artifacts with aspire publish
+    tags:
+      priority: p1
+      area: routing
+    environment:
+      skills:
+        - ../../aspire-deployment
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_05
+    description: "Reason: Completely unrelated"
+    prompt: What's the weather today?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_06
+    description: "Reason: Non-Aspire project"
+    prompt: Build my React app
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_07
+    description: "Reason: Standard test workflow, not Aspire-specific"
+    prompt: Run my unit tests
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_08
+    description: "Reason: Deployed diagnostics routes to azure-diagnostics"
+    prompt: Check my App Insights metrics for the deployed app
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_09
+    description: "Reason: AppHost wiring (resource selection + AppHost edits) is owned by aspireify"
+    prompt: Wire up my AppHost with the API and Postgres
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_10
+    description: "Reason: Repo scanning + AppHost edits route to aspireify"
+    prompt: Scan my repo and add the right resources to apphost.cs
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_11
+    description: "Reason: ServiceDefaults / OTel wiring routes to aspireify"
+    prompt: Configure ServiceDefaults and OTel for my services
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_12
+    description: "Reason: aspire destroy routes to aspire-deployment"
+    prompt: Tear down my Aspire deployment in Azure
+    tags:
+      priority: p1
+      area: routing
+    environment:
+      skills:
+        - ../../aspire-deployment
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration
+  - name: should_not_trigger_13
+    description: "Reason: aspire dashboard run routes to aspire-monitoring"
+    # Phrased as a question: the eval executor waits for the agent turn to go
+    # idle, but `aspire dashboard run` is a foreground daemon that never returns.
+    # Routing intent (orchestration must NOT activate) is unchanged.
+    prompt: How do I run the Aspire dashboard in standalone mode?
+    tags:
+      priority: p1
+      area: routing
+    environment:
+      skills:
+        - ../../aspire-monitoring
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_orchestration
+        config:
+          disallowed:
+            - aspire-orchestration

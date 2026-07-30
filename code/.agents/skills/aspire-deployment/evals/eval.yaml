@@ -1,0 +1,747 @@
+name: aspire-deployment-eval
+description: Evaluates the aspire-deployment skill for correct multi-target deployment guidance,
+  pipeline step handling, and ensuring no handoff to azure-skills for Aspire deployments.
+version: "1.0"
+type: capability
+tags:
+  skill: aspire-deployment
+defaults:
+  runs: 3
+  # Per-trial wall-clock budget. Kept generous because runs >= 2 disables
+  # vally's timeout/rate-limit retries, so one slow trial would hard-fail the
+  # whole eval (evalHadExecutionErrors) even when the aggregate score passes.
+  timeout: 600s
+  executor: copilot-sdk
+  model: gpt-5-mini
+scoring:
+  # Score each stimulus by the weighted share of graders that pass, then gate on
+  # the aggregate (>= threshold) instead of demanding every grader pass on every
+  # trial. This absorbs gpt-5-mini nondeterminism and graders that look for code
+  # tokens the agent writes into edited files rather than its chat message;
+  # genuine regressions still drag the aggregate below the bar.
+  threshold: 0.7
+environment:
+  # vally 0.8.0 loads no skills unless declared here (paths resolve relative to
+  # this eval file). aspire-deployment is self-contained (INVOKES the aspire CLI
+  # and target cloud/container CLIs, no in-repo skill deps).
+  skills:
+    - ../../aspire-deployment
+stimuli:
+  - name: deploy-destroy-001
+    prompt: I'm done with this preview deployment — how do I tear down everything Aspire provisioned?
+    tags:
+      priority: p1
+      area:
+        - core-flow
+        - aspire-13-3
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_destroy
+        config:
+          prompt: Does the assistant's response recommend `aspire destroy` (new in Aspire 13.3) as the way to
+            tear down a deployed Aspire app? Answer based on intent.
+      - type: output-not-contains
+        config:
+          substring: az group delete
+        name: no_manual_teardown
+      - type: output-not-contains
+        config:
+          substring: kubectl delete
+      - type: output-not-contains
+        config:
+          substring: helm uninstall
+      - type: output-not-contains
+        config:
+          substring: docker compose down
+      - type: prompt
+        name: knows_destroy_is_cross_target
+        config:
+          prompt: The assistant's response should mention that `aspire destroy` is the inverse of `aspire
+            deploy` and works across deployment targets — Azure (resources deleted via Azure
+            Resource Manager), Kubernetes/AKS (Helm releases uninstalled, namespaces removed), and
+            Docker Compose (stacks stopped and removed). Bonus if it mentions the use case of CI
+            cleanup or ephemeral preview deployments.
+      - type: output-contains
+        config:
+          substring: aspire destroy
+      - type: output-not-contains
+        config:
+          substring: az group delete
+      - type: output-not-contains
+        config:
+          substring: kubectl delete
+      - type: output-not-contains
+        config:
+          substring: helm uninstall
+      - type: output-not-contains
+        config:
+          substring: docker compose down
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-azure-001
+    prompt: Deploy my Aspire application to Azure Container Apps
+    tags:
+      priority: p0
+      area: core-flow
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_deploy
+        config:
+          prompt: Does the assistant's response recommend using 'aspire deploy' (or an equivalent Aspire CLI
+            deployment command) to deploy the application to Azure? Answer based on the intent, not
+            exact string matching.
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: no_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azd provision
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+        name: no_azure_skills
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+      - type: output-contains
+        config:
+          substring: aspire deploy
+      - type: output-not-contains
+        config:
+          substring: azd up
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azd init
+      - type: output-not-contains
+        config:
+          substring: azd provision
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-js-001
+    prompt: I want to publish my Next.js app via my Aspire AppHost — what's the recommended approach?
+    tags:
+      priority: p1
+      area:
+        - knowledge
+        - current-aspire
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_addnextjsapp
+        config:
+          prompt: "Does the assistant's response recommend `AddNextJsApp(name, path)` as the first-class
+            Next.js helper? It should also note the requirement that `next.config.js` set `output:
+            \"standalone\"` so the build emits the standalone server, since `AddNextJsApp`
+            auto-configures Next.js standalone publishing."
+      - type: prompt
+        name: knows_publishas_family
+        config:
+          prompt: "Bonus: does the assistant's response mention or describe the broader current `PublishAs*`
+            family — `PublishAsStaticWebsite` (SPAs / Vite / Next.js export, preview),
+            `PublishAsNodeServer` (pre-bundled Node entry-points like SSR / TanStack Start /
+            SvelteKit), and `PublishAsPackageScript` (full Nitro Next.js, Remix, Astro SSR)? It does
+            NOT need to mention all three to pass — recognizing at least one alternative shows
+            awareness."
+      - type: output-contains
+        config:
+          substring: AddNextJsApp
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-multi-001
+    prompt: What deployment targets does Aspire support?
+    tags:
+      priority: p1
+      area:
+        - knowledge
+        - aspire-13-3
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: mentions_all_targets
+        config:
+          prompt: Does the assistant's response mention Azure as a deployment target for Aspire applications?
+            It should cover Azure Container Apps, Azure App Service, and Azure Kubernetes Service
+            (AKS). Answer based on the intent, not exact string matching.
+      - type: prompt
+        name: knows_k8s_helm_native
+        config:
+          prompt: The assistant's response should explain that in Aspire 13.3, Kubernetes deployment is native
+            and Helm-based — `aspire deploy` runs end-to-end after declaring an
+            `AddKubernetesEnvironment` (or `AddAzureKubernetesEnvironment` for AKS) and
+            `WithComputeEnvironment(...)`. It is acceptable (and correct) to note that the user
+            still needs cluster credentials (e.g., kubeconfig context, or `az aks get-credentials`).
+      - type: output-not-contains
+        config:
+          substring: kubectl apply
+        name: no_manual_k8s_tooling
+      - type: output-not-contains
+        config:
+          substring: helm install
+      - type: output-contains
+        config:
+          substring: Azure
+      - type: output-contains
+        config:
+          substring: Docker
+      - type: output-contains
+        config:
+          substring: Kubernetes
+      - type: output-not-contains
+        config:
+          substring: kubectl apply
+      - type: output-not-contains
+        config:
+          substring: helm install
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-step-001
+    prompt: I just need to re-seed the database, not redeploy everything
+    tags:
+      priority: p1
+      area: core-flow
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_do
+        config:
+          prompt: Does the assistant's response recommend using 'aspire do' (or an equivalent Aspire CLI
+            command for running individual pipeline steps) rather than a full deployment? Answer
+            based on the intent, not exact string matching.
+      - type: prompt
+        name: not_full_deploy
+        config:
+          prompt: Does the assistant's response use 'aspire do seed-data' or a similar named-step command
+            rather than recommending a full 'aspire deploy' when the user only wants to re-run one
+            pipeline step? Answer based on intent.
+      - type: output-contains
+        config:
+          substring: aspire do
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-notool-001
+    prompt: What tools do I need to deploy my Aspire app to Azure?
+    tags:
+      priority: p0
+      area:
+        - safety-guardrail
+        - aspire-13-3
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: aspire_only
+        config:
+          prompt: The assistant's response should explain that Aspire handles Azure deployment natively via
+            'aspire deploy' — the AppHost IS the deployment plan. It's fine to mention that `az
+            login` (Azure credentials) is still needed.
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: no_external_tooling
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azd init
+      - type: output-not-contains
+        config:
+          substring: azd provision
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+      - type: output-not-contains
+        config:
+          substring: kubectl apply
+      - type: output-not-contains
+        config:
+          substring: helm install
+      - type: output-contains
+        config:
+          substring: aspire deploy
+      - type: output-not-contains
+        config:
+          substring: azd up
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azd init
+      - type: output-not-contains
+        config:
+          substring: azd provision
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: kubectl apply
+      - type: output-not-contains
+        config:
+          substring: helm install
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-list-steps-001
+    prompt: Before I deploy, I want to understand what steps the pipeline will run and if there are any
+      issues
+    tags:
+      priority: p1
+      area: core-flow
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+    graders:
+      - type: prompt
+        name: uses_list_steps
+        config:
+          prompt: Does the assistant's response recommend using `aspire publish --list-steps` (or `aspire
+            deploy --list-steps`, or another `--list-steps`-style pipeline inspection) to preview
+            the deployment pipeline before actually deploying? It should suggest inspecting the
+            pipeline first rather than jumping straight to `aspire deploy`. Answer based on intent —
+            accept any phrasing that conveys previewing pipeline steps via the Aspire CLI's
+            list-steps flag.
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: deploy-publish-001
+    prompt: I just want to generate the deployment manifests without deploying
+    tags:
+      priority: p0
+      area: core-flow
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_publish
+        config:
+          prompt: Does the assistant's response recommend using 'aspire publish' (or an equivalent Aspire CLI
+            artifact generation command) to generate deployment manifests without deploying? Answer
+            based on the intent, not exact string matching.
+      - type: prompt
+        name: distinguishes_publish_deploy
+        config:
+          prompt: The assistant's response should clearly distinguish between 'aspire publish' (artifact
+            generation only) and 'aspire deploy' (full pipeline including deployment). It should use
+            'aspire publish' since the user only wants artifacts.
+      - type: output-contains
+        config:
+          substring: aspire publish
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: never_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+  - name: should_trigger_01
+    description: "Reason: Direct deployment request — matches 'deploy to Azure' keyword"
+    prompt: Deploy my Aspire app to Azure
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_02
+    description: "Reason: Direct CLI invocation of aspire publish"
+    prompt: Run aspire publish to generate deployment artifacts
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_03
+    description: "Reason: Named pipeline step — aspire do is deployment"
+    prompt: Run the seed-data pipeline step with aspire do
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_04
+    description: "Reason: K8s artifact generation routes to aspire-deployment"
+    prompt: Generate deployment artifacts for Kubernetes with Aspire
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_05
+    description: "Reason: Deployment troubleshooting routes to aspire-deployment"
+    prompt: My aspire deploy is stuck — how do I unstick or reset the deployment?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_06
+    description: "Reason: Docker Compose is an Aspire deploy target"
+    prompt: Push my Aspire app to a Docker Compose target
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_07
+    description: "Reason: aspire destroy is deployment lifecycle"
+    prompt: Tear down my Aspire deployment
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_08
+    description: "Reason: Direct aspire destroy invocation"
+    # Question phrasing: an imperative makes the executor run `aspire destroy`, which
+    # blocks on a confirmation prompt and times out the trial; the skill-invocation
+    # grader only checks routing, so intent is unchanged.
+    prompt: How do I run aspire destroy to remove my preview environment?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_09
+    description: "Reason: AddNextJsApp + publish is deployment"
+    prompt: Publish my Next.js app via Aspire with AddNextJsApp
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_10
+    description: "Reason: AKS is an Aspire deploy target via AddAzureKubernetesEnvironment"
+    prompt: Deploy my Aspire app to AKS
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_11
+    description: "Reason: AWS is an Aspire deploy target via `aspire add aws` + CDK environment"
+    prompt: Deploy my Aspire app to AWS
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_12
+    description: "Reason: Preflight / preview workflow is owned by aspire-deployment"
+    prompt: Validate my Aspire deployment plan before applying
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_trigger_13
+    description: "Reason: --list-steps is the canonical pipeline preview in aspire-deployment"
+    prompt: Inspect the deployment pipeline steps with aspire publish --list-steps
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_deployment
+        config:
+          required:
+            - aspire-deployment
+  - name: should_not_trigger_01
+    description: "Reason: Local start routes to aspire-orchestration"
+    # Question phrasing: an imperative makes the executor launch a foreground app run
+    # that never returns, timing out the trial; the skill-invocation grader only checks
+    # routing, so intent is unchanged.
+    prompt: How do I start my Aspire app locally?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_02
+    description: "Reason: Logs route to aspire-monitoring"
+    prompt: Show me the application logs
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_03
+    description: "Reason: Resource wait routes to aspire-orchestration"
+    # Question phrasing: an imperative makes the executor run blocking `aspire wait`,
+    # which hangs until the resource is ready and times out the trial; the
+    # skill-invocation grader only checks routing, so intent is unchanged.
+    prompt: How do I wait for the database to be ready?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_04
+    description: "Reason: Deployed monitoring routes to azure-diagnostics"
+    prompt: Check my App Insights dashboard
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_05
+    description: "Reason: Non-Aspire Azure work"
+    prompt: Create an Azure VM
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_06
+    description: "Reason: Not deployment related"
+    prompt: Run my unit tests
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_07
+    description: "Reason: AppHost wiring routes to aspireify"
+    prompt: Wire up my AppHost with Postgres and Redis
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment
+  - name: should_not_trigger_08
+    description: "Reason: Traces route to aspire-monitoring"
+    prompt: Show me the OpenTelemetry traces
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_deployment
+        config:
+          disallowed:
+            - aspire-deployment

@@ -1,0 +1,654 @@
+name: aspire-monitoring-eval
+description: Evaluates the aspire-monitoring skill for correct diagnostics routing between local
+  Aspire CLI and deployed platform-specific tools. Tests the bridge logic that is the skill's
+  primary value.
+version: "1.0"
+type: capability
+tags:
+  skill: aspire-monitoring
+defaults:
+  runs: 3
+  # Per-trial wall-clock budget. Kept generous because runs >= 2 disables
+  # vally's timeout/rate-limit retries, so one slow trial would hard-fail the
+  # whole eval (evalHadExecutionErrors) even when the aggregate score passes.
+  timeout: 600s
+  executor: copilot-sdk
+  model: gpt-5-mini
+scoring:
+  # Score each stimulus by the weighted share of graders that pass, then gate on
+  # the aggregate (>= threshold) instead of demanding every grader pass on every
+  # trial. This absorbs gpt-5-mini nondeterminism and graders that look for code
+  # tokens the agent writes into edited files rather than its chat message;
+  # genuine regressions still drag the aggregate below the bar.
+  threshold: 0.7
+environment:
+  # vally 0.8.0 loads no skills unless declared here (paths resolve relative to
+  # this eval file). aspire-monitoring is self-contained in-repo (its other
+  # INVOKES targets — azure-diagnostics, kubectl — are external to this plugin).
+  skills:
+    - ../../aspire-monitoring
+stimuli:
+  - name: mon-browser-logs-001
+    prompt: I want to see browser console logs and network requests from my Vite frontend in the Aspire
+      Dashboard alongside the API server logs. How does that work?
+    tags:
+      priority: p1
+      area:
+        - browser-logs
+        - dashboard
+        - 13-3
+        - routing
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: knows_browsers_integration
+        config:
+          prompt: Does the assistant's response identify the `Aspire.Hosting.Browsers` integration (or
+            equivalent description) as the mechanism that captures browser console logs, network
+            requests, and screenshots into the dashboard, and `WithBrowserLogs()` as the opt-in call
+            on a frontend resource? Answer based on intent.
+      - type: prompt
+        name: routes_code_change_to_aspireify
+        config:
+          prompt: Does the assistant's response route the actual code edit (adding `WithBrowserLogs()` to the
+            AppHost) to the `aspireify` skill (or otherwise indicate that AppHost authoring is out
+            of scope for this monitoring skill)? Answer based on intent — direct AppHost edits from
+            the monitoring skill should be discouraged.
+      - type: prompt
+        name: explains_dashboard_surface
+        config:
+          prompt: Does the assistant's response explain that once `WithBrowserLogs()` is wired, the browser
+            telemetry surfaces in the dashboard alongside server-side telemetry (and is also visible
+            via `aspire otel logs <frontend>`)?
+      - type: output-contains
+        config:
+          substring: WithBrowserLogs
+  - name: mon-dashboard-run-001
+    prompt: I want to view OTLP telemetry from a non-Aspire service in the Aspire Dashboard without
+      booting an AppHost. How do I do that and how do I query it from the CLI?
+    tags:
+      priority: p1
+      area:
+        - dashboard
+        - standalone
+        - 13-3
+    graders:
+      - type: prompt
+        name: knows_dashboard_run
+        config:
+          prompt: Does the assistant's response recommend `aspire dashboard run` as the way to launch the
+            Aspire Dashboard standalone (without an AppHost) and capture OTLP from any source?
+            Answer based on intent.
+      - type: prompt
+        name: warns_foreground_blocking
+        config:
+          prompt: Does the assistant's response warn that `aspire dashboard run` is foreground / blocking and
+            must be treated as a long-running background process by agents (e.g., bash mode="async",
+            capture the printed dashboard URL and token, do not wait for it to "finish")? This is
+            the critical safety note. Answer based on intent.
+      - type: prompt
+        name: connects_cli_via_dashboard_url
+        config:
+          prompt: Does the assistant's response show how to connect the Aspire CLI to a standalone dashboard
+            using `--dashboard-url` on `aspire otel logs` and/or `aspire otel traces`? The simplest
+            form passes the full login URL printed by `aspire dashboard run` (which contains the
+            `t=` token) to `--dashboard-url` — login URLs are normalized automatically. `--api-key`
+            is only required when the dashboard is configured with API-key auth. Either approach is
+            acceptable.
+      - type: output-not-contains
+        config:
+          substring: issue 16236
+        name: not_obsolete_workaround
+      - type: output-not-contains
+        config:
+          substring: "#16236"
+      - type: output-not-contains
+        config:
+          substring: may not exist in your version
+      - type: output-not-contains
+        config:
+          substring: verify aspire dashboard command exists
+      - type: output-contains
+        config:
+          substring: aspire dashboard run
+      - type: output-contains
+        config:
+          substring: --dashboard-url
+  - name: mon-azure-001
+    prompt: My app is deployed to Azure Container Apps with Front Door in front and I'm seeing 500
+      errors. Help me debug.
+    tags:
+      priority: p0
+      area:
+        - routing
+        - deployed
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: routes_to_azure_diagnostics
+        config:
+          prompt: Does the assistant's response route the user to azure-diagnostics, App Insights, or
+            platform-specific Azure monitoring tools for the deployed app? It should cover both the
+            workload (Container Apps logs) and Azure resource health in front of it (Front Door, App
+            Insights, NSP, private endpoint) where relevant. Answer based on the intent, not exact
+            string matching.
+      - type: output-not-contains
+        config:
+          substring: aspire logs
+        name: no_local_commands
+      - type: output-not-contains
+        config:
+          substring: aspire describe
+      - type: prompt
+        name: explains_why
+        config:
+          prompt: The assistant's response should explain that the Aspire CLI uses a local backchannel and
+            cannot reach deployed apps directly, then route to azure-diagnostics or App Insights. It
+            may mention `aspire otel logs --dashboard-url --api-key` as the only remote-capable
+            Aspire CLI surface (and only when a Dashboard is reachable).
+      - type: output-contains
+        config:
+          substring: azure-diagnostics
+      - type: output-not-contains
+        config:
+          substring: aspire logs
+      - type: output-not-contains
+        config:
+          substring: aspire describe
+  - name: mon-docker-001
+    prompt: Check the logs for my service running in Docker Compose
+    tags:
+      priority: p1
+      area:
+        - routing
+        - deployed
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_docker
+        config:
+          prompt: Does the assistant's response recommend using Docker CLI commands (docker logs, docker
+            compose logs, etc.) to check logs for a service running in Docker Compose? Answer based
+            on the intent, not exact string matching.
+      - type: output-not-contains
+        config:
+          substring: aspire logs
+        name: not_aspire_cli
+      - type: output-contains
+        config:
+          substring: docker
+  - name: mon-bridge-001
+    prompt: How do I check what's going on with my application?
+    tags:
+      priority: p0
+      area: routing
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: explains_three_way_routing
+        config:
+          prompt: |-
+            The assistant's response should ask or determine where the app is running and route to the correct tooling. Specifically it should distinguish at least three deployed targets: (1) local dev → aspire CLI (aspire describe, aspire logs, aspire otel), (2) AKS / Kubernetes workload → kubectl + Container Insights for pod
+                logs and workload state,
+            (3) other Azure resource health → azure-diagnostics (App Insights,
+                Front Door, NSP, private endpoint, App Service / Container Apps),
+            and ideally also Docker/Compose → docker logs. AppHost code or deployment definition questions should route to aspire-deployment (and aspireify for code edits). AKS should be a distinct bucket — not collapsed into a generic "Azure" answer.
+      - type: output-not-contains
+        config:
+          substring: aspire logs <pod>
+        name: no_local_for_deployed
+  - name: mon-export-001
+    prompt: I need to share the diagnostic data with another team member
+    tags:
+      priority: p1
+      area: local-diagnostics
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_export
+        config:
+          prompt: Does the assistant's response recommend using 'aspire export' (or an equivalent Aspire CLI
+            command for creating portable diagnostics bundles) to share diagnostic data? Answer
+            based on the intent, not exact string matching.
+      - type: output-contains
+        config:
+          substring: aspire export
+  - name: mon-include-hidden-001
+    prompt: I expected to see a 'db-migrator' resource in `aspire ps` but it's not showing up. The
+      AppHost definitely registers it. What's going on?
+    tags:
+      priority: p1
+      area:
+        - include-hidden
+        - 13-3
+        - debugging
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: suggests_include_hidden
+        config:
+          prompt: Does the assistant's response recommend re-running `aspire ps` (and/or `aspire describe`)
+            with `--include-hidden` to surface hidden-by-default resources such as proxies, helper
+            containers, and migrations? Answer based on intent.
+      - type: prompt
+        name: explains_default_behavior
+        config:
+          prompt: Does the assistant's response explain that Aspire 13.3 filters hidden resources by default
+            and that the filtered output is correct for normal app inspection — `--include-hidden`
+            is for debugging missing resources, proxies, helper containers, or migrations?
+      - type: output-not-contains
+        config:
+          substring: restart your app
+        name: not_misleading_workaround
+      - type: output-not-contains
+        config:
+          substring: reinstall aspire
+      - type: output-not-contains
+        config:
+          substring: delete the modules
+      - type: output-contains
+        config:
+          substring: --include-hidden
+  - name: mon-investigate-001
+    # Question phrasing that asks for the investigation approach: the prior scenario wording led
+    # the executor to actually run the AppHost and probe live, timing out the trial. The graders
+    # check intent (investigate before editing), so asking how to investigate keeps the workflow
+    # signal without launching the app.
+    prompt: Something is wrong with my app and requests are failing. How should I investigate?
+    tags:
+      priority: p0
+      area: workflow
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: investigates_first
+        config:
+          prompt: "The assistant's response should follow an investigation workflow before suggesting code
+            changes: 1. Check resource state with 'aspire describe' 2. Check structured logs with
+            'aspire otel logs' 3. Check console logs with 'aspire logs' 4. Check traces with 'aspire
+            otel traces' Investigation must come before any proposed code edit. Answer based on
+            intent."
+      - type: prompt
+        name: uses_aspire_commands
+        config:
+          prompt: Does the assistant's response recommend using Aspire CLI diagnostic commands (such as aspire
+            describe, aspire logs, aspire otel) to investigate the issue before suggesting code
+            changes? Answer based on the intent, not exact string matching.
+  - name: mon-logs-001
+    # Question phrasing that asks for the recommended command: the prior "show me" wording led
+    # the executor to actually run the AppHost and hunt/tail resource logs on disk (a long
+    # probe that never returns), timing out the trial. Asking how to view the logs elicits the
+    # `aspire logs` recommendation without launching the app.
+    prompt: How do I view what the API service is logging?
+    tags:
+      priority: p0
+      area: local-diagnostics
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_aspire_logs
+        config:
+          prompt: Does the assistant's response recommend using 'aspire logs' (or an equivalent Aspire CLI log
+            viewing command) to view application logs locally? Answer based on the intent, not exact
+            string matching.
+      - type: output-not-contains
+        config:
+          substring: cat
+        name: not_manual_logs
+      - type: output-not-contains
+        config:
+          substring: tail -f
+      - type: output-not-contains
+        config:
+          substring: docker logs
+      - type: output-contains
+        config:
+          substring: aspire logs
+  - name: mon-otel-001
+    prompt: I need to trace a request across my services to find the bottleneck
+    tags:
+      priority: p0
+      area: local-diagnostics
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_otel_traces
+        config:
+          prompt: Does the assistant's response recommend using 'aspire otel traces' (or an equivalent Aspire
+            CLI distributed tracing command) for cross-service trace analysis? Answer based on the
+            intent, not exact string matching.
+      - type: prompt
+        name: structured_first
+        config:
+          prompt: The assistant's response should prefer structured telemetry (aspire otel traces) over raw
+            console logs (aspire logs). It should recommend checking traces first for cross-service
+            analysis, then logs for detail.
+      - type: output-contains
+        config:
+          substring: aspire otel traces
+  - name: mon-tsbug-001
+    prompt: |-
+      I'm running a TypeScript AppHost and when I try 'aspire otel traces' I get:
+      "No such host is known" for some *.dev.localhost URL
+    tags:
+      priority: p1
+      area:
+        - known-bug
+        - issue-15782
+    environment:
+      files:
+        - src: ../../../evals/ts-apphost/apphost.ts
+          dest: ts-apphost/apphost.ts
+        - src: ../../../evals/ts-apphost/package.json
+          dest: ts-apphost/package.json
+        - src: ../../../evals/ts-apphost/aspire.config.json
+          dest: ts-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: knows_bug
+        config:
+          prompt: "The assistant's response should recognize this as a known issue with TypeScript AppHosts
+            (issue #15782) where *.dev.localhost URLs don't resolve. It should suggest using
+            --dashboard-url with localhost:PORT as a workaround."
+      - type: prompt
+        name: suggests_workaround
+        config:
+          prompt: Does the assistant's response suggest using localhost with a specific port (e.g.
+            --dashboard-url localhost:PORT) as a workaround for the DNS resolution issue? Answer
+            based on the intent, not exact string matching.
+  - name: should_trigger_01
+    description: "Reason: aspire logs is monitoring"
+    prompt: Show me the aspire logs for the API service
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_02
+    description: "Reason: aspire otel traces is monitoring"
+    prompt: Run aspire otel traces to view distributed traces
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_03
+    description: "Reason: Resource state via aspire describe is monitoring"
+    prompt: Run aspire describe to see resource state
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_04
+    description: "Reason: Telemetry export is monitoring"
+    prompt: Run aspire export to bundle telemetry
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_05
+    description: "Reason: App Insights query routes through monitoring bridge"
+    prompt: Query App Insights for my deployed Aspire app
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_06
+    description: "Reason: OTEL spans are monitoring"
+    prompt: Show me the OpenTelemetry spans with aspire otel spans
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_07
+    description: "Reason: Deployed container app logs route through monitoring bridge"
+    prompt: Tail the container app logs for my deployed Aspire service
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_08
+    description: "Reason: aspire dashboard run is a monitoring concern"
+    # Phrased as a question: `aspire dashboard run` is a foreground daemon that
+    # would never let the agent turn go idle. Monitoring must still activate.
+    prompt: How do I open a standalone Aspire dashboard with aspire dashboard run?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_09
+    description: "Reason: Aspire.Hosting.Browsers / WithBrowserLogs surfaces in dashboard"
+    prompt: View browser console logs in the Aspire dashboard
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_10
+    description: "Reason: Hidden-by-default in 13.3; requires --include-hidden"
+    prompt: I can't find my proxy resource in aspire ps — try --include-hidden
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_trigger_11
+    description: "Reason: AKS pod log routing lives in monitoring"
+    prompt: Tail AKS pod logs for my deployed Aspire service
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspire_monitoring
+        config:
+          required:
+            - aspire-monitoring
+  - name: should_not_trigger_01
+    description: "Reason: Start routes to aspire-orchestration"
+    # Question phrasing: an imperative makes the executor launch a foreground app run
+    # that never returns, timing out the trial; the skill-invocation grader only checks
+    # routing, so intent is unchanged.
+    prompt: How do I start my Aspire app?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_02
+    description: "Reason: Deploy routes to aspire-deployment"
+    prompt: Deploy my Aspire app to Azure
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_03
+    description: "Reason: Resource restart routes to aspire-orchestration"
+    prompt: Restart the Redis resource
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_04
+    description: "Reason: Adding integrations routes to aspireify"
+    prompt: How do I add PostgreSQL to my Aspire AppHost?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_05
+    description: "Reason: Non-Aspire Azure work"
+    prompt: Create an Azure storage account
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_06
+    description: "Reason: Not monitoring related"
+    prompt: Write unit tests for my service
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_07
+    description: "Reason: aspire destroy routes to aspire-deployment"
+    prompt: Tear down my Aspire deployment with aspire destroy
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring
+  - name: should_not_trigger_08
+    description: "Reason: AppHost code edits route to aspireify (monitoring only observes)"
+    prompt: Add WithBrowserLogs() to my Vite app in the AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire_monitoring
+        config:
+          disallowed:
+            - aspire-monitoring

@@ -1,0 +1,768 @@
+name: aspireify-eval
+description: "Evaluates the aspireify skill for correct agentic AppHost wiring guidance:
+  language-aware authoring (C#, file-based C#, TypeScript), current Aspire features (unified
+  withEnvironment, AddNextJsApp, WithBrowserLogs, ExcludeReferenceEndpoint), ServiceDefaults wiring,
+  validation flow, and proper hand-off to other Aspire skills."
+version: "1.0"
+type: capability
+tags:
+  skill: aspireify
+defaults:
+  runs: 3
+  # Per-trial wall-clock budget. Kept generous because runs >= 2 disables
+  # vally's timeout/rate-limit retries, so one slow trial would hard-fail the
+  # whole eval (evalHadExecutionErrors) even when the aggregate score passes.
+  timeout: 600s
+  executor: copilot-sdk
+  model: gpt-5-mini
+scoring:
+  # CI-gate tolerance: a stimulus passes when the weighted majority of its graders
+  # pass, rather than demanding every grader pass on every trial. This absorbs (a)
+  # gpt-5-mini nondeterminism and (b) `output-contains` graders that look for code
+  # tokens the agent writes into edited files instead of its chat message. Genuine
+  # regressions still drop the aggregate below the bar.
+  threshold: 0.7
+environment:
+  # vally 0.8.0 loads no skills unless declared here (paths resolve relative to
+  # this eval file). Load aspireify plus its in-repo dependency aspire-orchestration:
+  # aspireify validates wiring by running `aspire start` (aspire-orchestration territory).
+  skills:
+    - ../../aspireify
+    - ../../aspire-orchestration
+stimuli:
+  - name: aspireify-nextjs-001
+    prompt: Add my Next.js frontend in ./web to my Aspire AppHost and wire it to talk to my API.
+    tags:
+      priority: p1
+      area:
+        - authoring
+        - javascript
+        - 13-3
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+    graders:
+      - type: prompt
+        name: uses_add_next_js_app
+        config:
+          prompt: Does the assistant's response use AddNextJsApp("web", "./web") (the 13.3 first-class Next.js
+            helper that auto-applies standalone publishing) rather than AddNodeApp or a hand-rolled
+            Dockerfile?
+      - type: prompt
+        name: mentions_standalone_output
+        config:
+          prompt: Does the assistant's response mention setting output:"standalone" in next.config.js so that
+            AddNextJsApp's auto-publish works correctly?
+      - type: prompt
+        name: wires_to_api
+        config:
+          prompt: Does the assistant's response connect the Next.js app to the API via WithReference (or
+            equivalent) so the frontend gets the API endpoint via service discovery?
+      - type: output-not-contains
+        config:
+          substring: write a Dockerfile
+        name: no_dockerfile_recommendation
+      - type: output-not-contains
+        config:
+          substring: create a Dockerfile
+      - type: output-not-contains
+        config:
+          substring: hand-rolled Dockerfile
+      - type: output-contains
+        config:
+          substring: AddNextJsApp
+      - type: output-contains
+        config:
+          substring: WithReference
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-modules-001
+    prompt: Edit the file in .aspire/modules/ to change how my Postgres resource is configured.
+    tags:
+      priority: p0
+      area:
+        - typescript
+        - safety
+    environment:
+      files:
+        - src: ../../../evals/ts-apphost/apphost.ts
+          dest: ts-apphost/apphost.ts
+        - src: ../../../evals/ts-apphost/aspire.config.json
+          dest: ts-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: refuses_modules_edit
+        config:
+          prompt: Does the assistant's response explicitly refuse to edit files inside the .aspire/modules/
+            directory and explain that .aspire/modules/ is generated and edits will be clobbered?
+      - type: prompt
+        name: redirects_to_apphost_ts
+        config:
+          prompt: Does the assistant's response redirect the user's intended change to apphost.ts (the only
+            file the user should edit in a TS AppHost)?
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules
+        name: never_recommends_modules_edit
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules
+      - type: output-not-contains
+        config:
+          substring: open .aspire/modules/
+      - type: output-contains
+        config:
+          substring: apphost.ts
+      - type: output-contains
+        config:
+          substring: .aspire/modules
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-defaults-001
+    prompt: I just wired my AppHost. Now wire ServiceDefaults and OpenTelemetry into each of my projects.
+    tags:
+      priority: p1
+      area:
+        - service-defaults
+        - otel
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+    graders:
+      - type: prompt
+        name: adds_service_defaults
+        config:
+          prompt: Does the assistant's response add builder.AddServiceDefaults() to each service's Program.cs
+            (Api and Worker)?
+      - type: prompt
+        name: maps_default_endpoints
+        config:
+          prompt: Does the assistant's response add app.MapDefaultEndpoints() so /health and /alive are
+            exposed for use by AppHost's WaitFor / HealthChecks?
+      - type: prompt
+        name: mentions_otel_health_discovery
+        config:
+          prompt: Does the assistant's response explain that AddServiceDefaults wires OpenTelemetry (tracing,
+            metrics, logs), health checks, service discovery, and HTTP resilience — i.e., the agent
+            understands what they are configuring?
+      - type: prompt
+        name: project_reference
+        config:
+          prompt: Does the assistant's response add a ProjectReference from each service project to the
+            Aspire.ServiceDefaults project (or equivalent NuGet package)?
+      - type: output-contains
+        config:
+          substring: AddServiceDefaults
+      - type: output-contains
+        config:
+          substring: MapDefaultEndpoints
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-unified-env-001
+    prompt: |-
+      In my apphost.ts I want to inject three env vars into my API: an endpoint,
+      a parameter, and a connection string. Show me the right API to use in 13.3.
+    tags:
+      priority: p0
+      area:
+        - typescript
+        - 13-3
+    environment:
+      files:
+        - src: ../../../evals/ts-apphost/apphost.ts
+          dest: ts-apphost/apphost.ts
+        - src: ../../../evals/ts-apphost/aspire.config.json
+          dest: ts-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_unified_api
+        config:
+          prompt: Does the assistant's response use the unified withEnvironment(name, value) API (one method)
+            for ALL three injections — endpoint, parameter, and connection string — rather than
+            per-kind helpers?
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: no_per_kind_helpers
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentExpression
+      - type: prompt
+        name: explains_deprecation
+        config:
+          prompt: Does the assistant's response mention that per-kind helpers (withEnvironmentEndpoint,
+            withEnvironmentParameter, etc.) are @deprecated in 13.3 and should not be used in new
+            code?
+      - type: output-contains
+        config:
+          substring: withEnvironment(
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-validate-001
+    prompt: I finished wiring my AppHost. How do I validate everything works and what should I do next?
+    tags:
+      priority: p0
+      area:
+        - validation
+        - handoff
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_non_interactive
+        config:
+          prompt: Does the assistant's response use aspire start --non-interactive (required for agent
+            execution to suppress prompts and spinners)?
+      - type: prompt
+        name: uses_aspire_wait
+        config:
+          prompt: Does the assistant's response use aspire wait <resource> rather than curl loops or HTTP
+            polling to confirm each resource is healthy?
+      - type: prompt
+        name: uses_describe
+        config:
+          prompt: Does the assistant's response use aspire describe --format Json (with --include-hidden if
+            appropriate) to sanity-check the resource graph?
+      - type: prompt
+        name: hands_off_to_orchestration
+        config:
+          prompt: Does the assistant's response announce that aspireify is done and hand off day-to-day
+            start/stop/wait responsibility to the aspire-orchestration skill (i.e., self-deactivates
+            rather than continuing to own lifecycle)?
+      - type: output-contains
+        config:
+          substring: aspire start
+      - type: output-contains
+        config:
+          substring: aspire wait
+      - type: output-contains
+        config:
+          substring: aspire-orchestration
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-csharp-001
+    prompt: Wire up my C# AppHost to add Postgres and connect my API project to it.
+    tags:
+      priority: p0
+      area:
+        - authoring
+        - csharp
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_addpostgres
+        config:
+          prompt: Does the assistant's response wire Postgres into the AppHost using AddPostgres (e.g.,
+            AddPostgres("pg").AddDatabase("appdb"))? Answer based on intent.
+      - type: prompt
+        name: wires_with_reference
+        config:
+          prompt: Does the assistant's response connect the API project to Postgres via WithReference and
+            WaitFor (so the API blocks startup until Postgres is healthy)?
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: no_deprecated_helpers
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-contains
+        config:
+          substring: AddPostgres
+      - type: output-contains
+        config:
+          substring: AddProject
+      - type: output-contains
+        config:
+          substring: WithReference
+      - type: output-contains
+        config:
+          substring: WaitFor
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-filebased-001
+    prompt: I have an apphost.cs file. Add Redis and wire up my API project to use it.
+    tags:
+      priority: p1
+      area:
+        - authoring
+        - file-based-csharp
+    graders:
+      - type: prompt
+        name: edits_apphost_cs
+        config:
+          prompt: "Does the assistant's response edit apphost.cs directly (with #:sdk and #:package directives
+            at the top), rather than creating a .csproj file?"
+      - type: prompt
+        name: uses_path_overload
+        config:
+          prompt: Does the assistant's response use AddProject("name", "path/to/Api.csproj") — the path
+            overload — instead of AddProject<Projects.Api>("name") which is only available in
+            SDK-style AppHosts with strongly-typed references?
+      - type: prompt
+        name: adds_redis_package
+        config:
+          prompt: "Does the assistant's response add a #:package directive for Aspire.Hosting.Redis so
+            AddRedis is available?"
+      - type: output-contains
+        config:
+          substring: "#:sdk"
+      - type: output-contains
+        config:
+          substring: "#:package"
+      - type: output-contains
+        config:
+          substring: AddRedis
+      - type: output-contains
+        config:
+          substring: AddProject
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: aspireify-ts-001
+    prompt: Wire up my apphost.ts so my Node API gets the Redis endpoint as an env var.
+    tags:
+      priority: p0
+      area:
+        - authoring
+        - typescript
+    environment:
+      files:
+        - src: ../../../evals/ts-apphost/apphost.ts
+          dest: ts-apphost/apphost.ts
+        - src: ../../../evals/ts-apphost/aspire.config.json
+          dest: ts-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: uses_unified_with_environment
+        config:
+          prompt: Does the assistant's response use the unified withEnvironment(name, value) API (a single
+            method that accepts any value kind) rather than per-kind helpers like
+            withEnvironmentEndpoint or withEnvironmentParameter?
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: no_deprecated_helpers
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentExpression
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules
+        name: never_edit_modules
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules
+      - type: prompt
+        name: edits_apphost_ts
+        config:
+          prompt: Does the assistant's response edit apphost.ts (and explicitly avoid editing the generated
+            .aspire/modules/ directory)?
+      - type: output-contains
+        config:
+          substring: withEnvironment
+      - type: output-contains
+        config:
+          substring: addRedis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentEndpoint
+        name: never_deprecated_apis
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentParameter
+      - type: output-not-contains
+        config:
+          substring: withEnvironmentConnectionString
+      - type: output-not-contains
+        config:
+          substring: AddAndPublishPromptAgent
+      - type: output-not-contains
+        config:
+          substring: edit .aspire/modules/
+        name: never_edit_modules_2
+      - type: output-not-contains
+        config:
+          substring: modify .aspire/modules/
+  - name: should_trigger_01
+    description: "Reason: Direct wiring request — aspireify owns AppHost wiring"
+    prompt: Wire up my Aspire AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_02
+    description: "Reason: Adding an integration resource to AppHost is wiring"
+    prompt: Add Postgres to my Aspire AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_03
+    description: "Reason: Resource graph scaffolding is the core aspireify flow"
+    # Question phrasing: an imperative makes the executor run the interactive resource
+    # scaffolder, which blocks and times out the trial; the skill-invocation grader
+    # only checks routing, so intent is unchanged.
+    prompt: How do I scaffold the resource graph for my Aspire app?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_04
+    description: "Reason: aspire init drops a skeleton; aspireify completes the wiring"
+    prompt: After running aspire init, what next to wire my AppHost?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_05
+    description: "Reason: Wiring service references between projects in the AppHost"
+    prompt: Connect my React frontend to my .NET API in the AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_06
+    description: "Reason: Integration discovery + AppHost edit"
+    prompt: Add Redis cache to my Aspire AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_07
+    description: "Reason: WithBrowserLogs is an AppHost authoring change"
+    prompt: Add WithBrowserLogs to my Vite app in apphost.ts
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_08
+    description: "Reason: TS AppHost authoring is aspireify"
+    prompt: Help me use the unified withEnvironment API in apphost.ts
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_09
+    description: "Reason: Refuse-and-redirect anti-pattern handling lives in aspireify"
+    prompt: Edit .aspire/modules/postgres.module.ts to change the DB config
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_trigger_10
+    description: "Reason: AddNextJsApp wiring is aspireify"
+    prompt: Add AddNextJsApp to my AppHost for the web frontend
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: invokes_aspireify
+        config:
+          required:
+            - aspireify
+  - name: should_not_trigger_01
+    description: "Reason: Deployment routes to aspire-deployment"
+    prompt: Deploy my Aspire app to Azure
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_02
+    description: "Reason: App lifecycle routes to aspire-orchestration"
+    # Question phrasing: an imperative makes the executor launch a foreground app run
+    # that never returns, timing out the trial; the skill-invocation grader only checks
+    # routing, so intent is unchanged.
+    prompt: How do I start my Aspire app?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_03
+    description: "Reason: Logs route to aspire-monitoring"
+    prompt: Show me my application logs
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_04
+    description: "Reason: Skeleton drop routes to aspire-init"
+    # Question phrasing: an imperative makes the executor run the interactive scaffolder
+    # (`aspire new`), which blocks and times out the trial; the skill-invocation grader
+    # only checks routing, so intent is unchanged.
+    prompt: How do I create a new Aspire project from scratch?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_05
+    description: "Reason: Lifecycle routes to aspire-orchestration"
+    prompt: Stop the AppHost
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_06
+    description: "Reason: aspire destroy routes to aspire-deployment"
+    prompt: Tear down my Azure deployment
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_07
+    description: "Reason: Dashboard / monitoring routes to aspire-monitoring"
+    # Phrased as a question: an imperative "open the dashboard" can launch the
+    # foreground `aspire dashboard run` daemon and hang the executor.
+    prompt: How do I open the Aspire dashboard?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify
+  - name: should_not_trigger_08
+    description: "Reason: aspire init (skeleton drop) routes to aspire-init"
+    # Question phrasing: an imperative makes the executor run interactive `aspire init`,
+    # which blocks and times out the trial; the skill-invocation grader only checks
+    # routing, so intent is unchanged.
+    prompt: How do I run aspire init to scaffold a new AppHost?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspireify
+        config:
+          disallowed:
+            - aspireify

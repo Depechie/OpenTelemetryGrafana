@@ -1,0 +1,562 @@
+lockfile_version: '1'
+generated_at: '2026-07-30T20:30:21.709830+00:00'
+apm_version: 0.26.0
+dependencies:
+- repo_url: microsoft/aspire-skills
+  name: aspire
+  host: github.com
+  resolved_commit: 81a0dc5f85e0bc4dc2f2849aaca9dee85b7999cc
+  version: 0.0.1
+  package_type: marketplace_plugin
+  deployed_files:
+  - .agents/skills/aspire
+  - .agents/skills/aspire-deployment
+  - .agents/skills/aspire-deployment/SKILL.md
+  - .agents/skills/aspire-deployment/evals/eval.yaml
+  - .agents/skills/aspire-deployment/references/aws.md
+  - .agents/skills/aspire-deployment/references/azure.md
+  - .agents/skills/aspire-deployment/references/cicd.md
+  - .agents/skills/aspire-deployment/references/docker-compose.md
+  - .agents/skills/aspire-deployment/references/github-actions-azure-csharp.yml
+  - .agents/skills/aspire-deployment/references/github-actions-azure-typescript.yml
+  - .agents/skills/aspire-deployment/references/javascript.md
+  - .agents/skills/aspire-deployment/references/kubernetes.md
+  - .agents/skills/aspire-deployment/references/preflight.md
+  - .agents/skills/aspire-init
+  - .agents/skills/aspire-init/SKILL.md
+  - .agents/skills/aspire-init/evals/eval.yaml
+  - .agents/skills/aspire-init/references/init-workflow.md
+  - .agents/skills/aspire-init/references/templates.md
+  - .agents/skills/aspire-monitoring
+  - .agents/skills/aspire-monitoring/SKILL.md
+  - .agents/skills/aspire-monitoring/evals/eval.yaml
+  - .agents/skills/aspire-monitoring/references/diagnostics-bridge.md
+  - .agents/skills/aspire-monitoring/references/monitoring.md
+  - .agents/skills/aspire-monitoring/references/playwright-handoff.md
+  - .agents/skills/aspire-orchestration
+  - .agents/skills/aspire-orchestration/SKILL.md
+  - .agents/skills/aspire-orchestration/evals/eval.yaml
+  - .agents/skills/aspire-orchestration/references/agent-workflows.md
+  - .agents/skills/aspire-orchestration/references/app-commands.md
+  - .agents/skills/aspire-orchestration/references/detection.md
+  - .agents/skills/aspire-orchestration/references/resource-management.md
+  - .agents/skills/aspire-orchestration/references/safety-guardrails.md
+  - .agents/skills/aspire/SKILL.md
+  - .agents/skills/aspire/evals/eval.yaml
+  - .agents/skills/aspire/references/aspire-13-3-breaking-changes.md
+  - .agents/skills/aspireify
+  - .agents/skills/aspireify/SKILL.md
+  - .agents/skills/aspireify/evals/eval.yaml
+  - .agents/skills/aspireify/references/apphost-wiring.md
+  - .agents/skills/aspireify/references/csharp-authoring.md
+  - .agents/skills/aspireify/references/docker-compose.md
+  - .agents/skills/aspireify/references/full-solution-apphosts.md
+  - .agents/skills/aspireify/references/javascript-apps.md
+  - .agents/skills/aspireify/references/opentelemetry.md
+  - .agents/skills/aspireify/references/scan-and-propose.md
+  - .agents/skills/aspireify/references/service-defaults.md
+  - .agents/skills/aspireify/references/typescript-authoring.md
+  - .agents/skills/aspireify/references/validation.md
+  deployed_file_hashes:
+    .agents/skills/aspire-deployment/SKILL.md: sha256:70d784758d975b22b942608eace642f7bb3103defbb12643e4d744d0078b52b1
+    .agents/skills/aspire-deployment/evals/eval.yaml: sha256:b3e64c8697d152e1fc90f0422accfc661727dd5f4f7f4670e0590ca5657f6567
+    .agents/skills/aspire-deployment/references/aws.md: sha256:8ebaf752bd385a3144018708140910f249479697aeeebcf8012dd0d1951c583a
+    .agents/skills/aspire-deployment/references/azure.md: sha256:a0d2e661dc19f993bb6695b7fdbb527fb4996651fe9e1209b8f440efe3b0c6b3
+    .agents/skills/aspire-deployment/references/cicd.md: sha256:04b0813750583c61f71e950ff51ba72d5eee2dd67d3de78f6050fbb8c2b3a9a2
+    .agents/skills/aspire-deployment/references/docker-compose.md: sha256:7e050e319f4adcd43cf0908b858c895f6d5f7086ffeca99cf3077b394a64bbdb
+    .agents/skills/aspire-deployment/references/github-actions-azure-csharp.yml: sha256:edd51e0076ba1a0c6d2cbf79e101d0c9b025a43ce2d1ceef0accb68a168bd719
+    .agents/skills/aspire-deployment/references/github-actions-azure-typescript.yml: sha256:fd736072eb233ff88f1120f4a49277489a2d9ef69916e7a800813976d8a2ff35
+    .agents/skills/aspire-deployment/references/javascript.md: sha256:032832652c021aec9bf8443de8363cb8bcee83d740e4678ab02bcf8c151bbb1e
+    .agents/skills/aspire-deployment/references/kubernetes.md: sha256:eb270fd25fc58cc14641107bcca85ef59d01731aec2fcc378573db4d938ed3be
+    .agents/skills/aspire-deployment/references/preflight.md: sha256:d744493c6cc5bed4a7499b7ded7e482fa71cfb4eb95b67047cdb3abb5e092df0
+    .agents/skills/aspire-init/SKILL.md: sha256:0c1f6584751389d89d478bb942fa4901bc058f4d3d7aa225034c748df2224f9d
+    .agents/skills/aspire-init/evals/eval.yaml: sha256:366a9430471763f00be86f3a1ccb03b3eea264525b655c8c4395293a3ceff7e0
+    .agents/skills/aspire-init/references/init-workflow.md: sha256:74a6819dfa35e51a95f73b31ae5d65f8edbc72581ead65456289ce3323caec86
+    .agents/skills/aspire-init/references/templates.md: sha256:b6890317230af1553404f73b222da7304a5d1b1b3876484f76981f4695334e8d
+    .agents/skills/aspire-monitoring/SKILL.md: sha256:798ca7187a4058fdf10bbb413872befe4b6c7e9f74b0bd33777a3eae260b9b25
+    .agents/skills/aspire-monitoring/evals/eval.yaml: sha256:61b1f56358e8f8426636b080257a0a44c12ea05788856273f24c083e5f2ae6d9
+    .agents/skills/aspire-monitoring/references/diagnostics-bridge.md: sha256:5b4018ff2e01e3872733acebc35421fe06522b9faf6747e9e3b31d5a852f5f49
+    .agents/skills/aspire-monitoring/references/monitoring.md: sha256:19588b53725c9679026bf717c7392fd27d2144f606e622e595b8308f4517869b
+    .agents/skills/aspire-monitoring/references/playwright-handoff.md: sha256:915db809d8b5f5e44ffd5a5e4a2eb18ffb37ff8f4e4a4d496f53146909d54a7d
+    .agents/skills/aspire-orchestration/SKILL.md: sha256:46a70dabccfd02d5661194ac95f85b6ed3a8449a6aa57d286d2f77ec3f40258b
+    .agents/skills/aspire-orchestration/evals/eval.yaml: sha256:ce7829904da9bfe374e926a021835686a0f9a09080fb40637ceb0d0c7822fb25
+    .agents/skills/aspire-orchestration/references/agent-workflows.md: sha256:9bd6f92a7e716d44c8b18b8e8f0e3447ffc2ade11a75446f19e24c72df8a1af9
+    .agents/skills/aspire-orchestration/references/app-commands.md: sha256:f283b6f76da64decf7212d8785dc339990fe69ea6f43e998bba482f696a01299
+    .agents/skills/aspire-orchestration/references/detection.md: sha256:fa8d3f4a08e7cbabf07671b35c434fae48dfa2b9fef4180699ed2866f3992898
+    .agents/skills/aspire-orchestration/references/resource-management.md: sha256:7a5c24f87ed3140877959526b25caac7d98b556d5544bbb21676a1059bd6e80b
+    .agents/skills/aspire-orchestration/references/safety-guardrails.md: sha256:2e27b9d89e87447d1ae6c6d894634bbbc9be9a292a67f146666e0db683764366
+    .agents/skills/aspire/SKILL.md: sha256:4efd0296ec31fbfc3bef13365b1546e6fc5a6ef5fe366f373f50f0eff57fc2a1
+    .agents/skills/aspire/evals/eval.yaml: sha256:91d38da0f9f7f0c8038f0c822e883e6e73aab34158173e904285161cb5bdf5fb
+    .agents/skills/aspire/references/aspire-13-3-breaking-changes.md: sha256:a8000f1f07a32d234fe2b4e7ee2899985975933277e49c3d24faef4a395ac667
+    .agents/skills/aspireify/SKILL.md: sha256:93a7453e5b520ef28f127681ee5ef341e1e852eb1fe8aa75c6d89e763822f2cf
+    .agents/skills/aspireify/evals/eval.yaml: sha256:b146c05b0593f8aa41234bc2ecf5092585229378fde6fc30db3f48a27fd50a83
+    .agents/skills/aspireify/references/apphost-wiring.md: sha256:2793e84fe58018f0e36476d69d857fc270556b3738a67bc78c878f3479603407
+    .agents/skills/aspireify/references/csharp-authoring.md: sha256:21a49c48f228cd4db7273ad52112c1e79105e20a6e06df81a0ac9446d9fc2e21
+    .agents/skills/aspireify/references/docker-compose.md: sha256:79e733a4955610b5d22c774d2d8d1dca7eecc9acb423c91542bb3d83beb34686
+    .agents/skills/aspireify/references/full-solution-apphosts.md: sha256:0b48337d70e09d27ae877ac894b901ea57978efb1808e36a2c9b810b47c227e0
+    .agents/skills/aspireify/references/javascript-apps.md: sha256:be35f69fc5aae519f5205d2ab6a947bfc9c8e152c2555579a13c1a7198aed757
+    .agents/skills/aspireify/references/opentelemetry.md: sha256:b2e596a1caecac9883c7540df6f9a7e017be3c54ce8f0c6572b20d89c4343f80
+    .agents/skills/aspireify/references/scan-and-propose.md: sha256:b197bd66cf349710e6cd8d6fb6fa4d0da2e1c065e8a2889a7955d5948ba327e8
+    .agents/skills/aspireify/references/service-defaults.md: sha256:2c9e616a02305e06c9e5704615890032c3249bc0ee20772ecba762bf6890c3eb
+    .agents/skills/aspireify/references/typescript-authoring.md: sha256:4e55d0def9f541ff5922f03f59a8311e73378bb1c180a3b5e7cff3ea133cf5d1
+    .agents/skills/aspireify/references/validation.md: sha256:f1035d891f022e376b5b61d5f05fddaf9e6d31f698b0cd544493101e882f91f8
+  content_hash: sha256:0600688115b2ff68cc2d569378c3ccd5fe03cdf07be9b750cc7e0c5c53792bee
+  declared_license: MIT
+deployments:
+- kind: uri
+  target: mcp
+  value: context7
+  runtime: opencode
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:70d784758d975b22b942608eace642f7bb3103defbb12643e4d744d0078b52b1
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/evals/eval.yaml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:b3e64c8697d152e1fc90f0422accfc661727dd5f4f7f4670e0590ca5657f6567
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/aws.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:8ebaf752bd385a3144018708140910f249479697aeeebcf8012dd0d1951c583a
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/azure.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:a0d2e661dc19f993bb6695b7fdbb527fb4996651fe9e1209b8f440efe3b0c6b3
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/cicd.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:04b0813750583c61f71e950ff51ba72d5eee2dd67d3de78f6050fbb8c2b3a9a2
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/docker-compose.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:7e050e319f4adcd43cf0908b858c895f6d5f7086ffeca99cf3077b394a64bbdb
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/github-actions-azure-csharp.yml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:edd51e0076ba1a0c6d2cbf79e101d0c9b025a43ce2d1ceef0accb68a168bd719
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/github-actions-azure-typescript.yml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:fd736072eb233ff88f1120f4a49277489a2d9ef69916e7a800813976d8a2ff35
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/javascript.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:032832652c021aec9bf8443de8363cb8bcee83d740e4678ab02bcf8c151bbb1e
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/kubernetes.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:eb270fd25fc58cc14641107bcca85ef59d01731aec2fcc378573db4d938ed3be
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-deployment/references/preflight.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:d744493c6cc5bed4a7499b7ded7e482fa71cfb4eb95b67047cdb3abb5e092df0
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-init
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-init/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:0c1f6584751389d89d478bb942fa4901bc058f4d3d7aa225034c748df2224f9d
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-init/evals/eval.yaml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:366a9430471763f00be86f3a1ccb03b3eea264525b655c8c4395293a3ceff7e0
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-init/references/init-workflow.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:74a6819dfa35e51a95f73b31ae5d65f8edbc72581ead65456289ce3323caec86
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-init/references/templates.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:b6890317230af1553404f73b222da7304a5d1b1b3876484f76981f4695334e8d
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-monitoring
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-monitoring/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:798ca7187a4058fdf10bbb413872befe4b6c7e9f74b0bd33777a3eae260b9b25
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-monitoring/evals/eval.yaml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:61b1f56358e8f8426636b080257a0a44c12ea05788856273f24c083e5f2ae6d9
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-monitoring/references/diagnostics-bridge.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:5b4018ff2e01e3872733acebc35421fe06522b9faf6747e9e3b31d5a852f5f49
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-monitoring/references/monitoring.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:19588b53725c9679026bf717c7392fd27d2144f606e622e595b8308f4517869b
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-monitoring/references/playwright-handoff.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:915db809d8b5f5e44ffd5a5e4a2eb18ffb37ff8f4e4a4d496f53146909d54a7d
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:46a70dabccfd02d5661194ac95f85b6ed3a8449a6aa57d286d2f77ec3f40258b
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/evals/eval.yaml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:ce7829904da9bfe374e926a021835686a0f9a09080fb40637ceb0d0c7822fb25
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/references/agent-workflows.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:9bd6f92a7e716d44c8b18b8e8f0e3447ffc2ade11a75446f19e24c72df8a1af9
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/references/app-commands.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:f283b6f76da64decf7212d8785dc339990fe69ea6f43e998bba482f696a01299
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/references/detection.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:fa8d3f4a08e7cbabf07671b35c434fae48dfa2b9fef4180699ed2866f3992898
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/references/resource-management.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:7a5c24f87ed3140877959526b25caac7d98b556d5544bbb21676a1059bd6e80b
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire-orchestration/references/safety-guardrails.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:2e27b9d89e87447d1ae6c6d894634bbbc9be9a292a67f146666e0db683764366
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:4efd0296ec31fbfc3bef13365b1546e6fc5a6ef5fe366f373f50f0eff57fc2a1
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire/evals/eval.yaml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:91d38da0f9f7f0c8038f0c822e883e6e73aab34158173e904285161cb5bdf5fb
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspire/references/aspire-13-3-breaking-changes.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:a8000f1f07a32d234fe2b4e7ee2899985975933277e49c3d24faef4a395ac667
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: null
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:93a7453e5b520ef28f127681ee5ef341e1e852eb1fe8aa75c6d89e763822f2cf
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/evals/eval.yaml
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:b146c05b0593f8aa41234bc2ecf5092585229378fde6fc30db3f48a27fd50a83
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/apphost-wiring.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:2793e84fe58018f0e36476d69d857fc270556b3738a67bc78c878f3479603407
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/csharp-authoring.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:21a49c48f228cd4db7273ad52112c1e79105e20a6e06df81a0ac9446d9fc2e21
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/docker-compose.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:79e733a4955610b5d22c774d2d8d1dca7eecc9acb423c91542bb3d83beb34686
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/full-solution-apphosts.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:0b48337d70e09d27ae877ac894b901ea57978efb1808e36a2c9b810b47c227e0
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/javascript-apps.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:be35f69fc5aae519f5205d2ab6a947bfc9c8e152c2555579a13c1a7198aed757
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/opentelemetry.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:b2e596a1caecac9883c7540df6f9a7e017be3c54ce8f0c6572b20d89c4343f80
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/scan-and-propose.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:b197bd66cf349710e6cd8d6fb6fa4d0da2e1c065e8a2889a7955d5948ba327e8
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/service-defaults.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:2c9e616a02305e06c9e5704615890032c3249bc0ee20772ecba762bf6890c3eb
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/typescript-authoring.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:4e55d0def9f541ff5922f03f59a8311e73378bb1c180a3b5e7cff3ea133cf5d1
+- kind: project-relative
+  target: opencode
+  value: .agents/skills/aspireify/references/validation.md
+  runtime: null
+  scope: project
+  owners:
+  - microsoft/aspire-skills
+  active_owner: microsoft/aspire-skills
+  content_hash: sha256:f1035d891f022e376b5b61d5f05fddaf9e6d31f698b0cd544493101e882f91f8
+mcp_servers:
+- context7
+mcp_configs:
+  context7:
+    name: context7
+    transport: stdio
+    args:
+    - -y
+    - '@upstash/context7-mcp@latest'
+    registry: false
+    command: npx
+mcp_target_servers:
+  opencode:
+  - context7
+mcp_config_provenance:
+  context7: aspire

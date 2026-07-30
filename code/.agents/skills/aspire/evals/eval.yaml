@@ -1,0 +1,509 @@
+name: aspire-router-eval
+description: Evaluates the top-level aspire router skill for correct sub-skill routing. Tests that
+  prompts are directed to aspire-orchestration, aspire-deployment, or aspire-monitoring based on
+  intent.
+version: "1.0"
+type: capability
+tags:
+  skill: aspire
+defaults:
+  runs: 3
+  # Per-trial wall-clock budget. Kept generous because runs >= 2 disables
+  # vally's timeout/rate-limit retries, so one slow trial would hard-fail the
+  # whole eval (evalHadExecutionErrors) even when the aggregate score passes.
+  timeout: 600s
+  executor: copilot-sdk
+  model: gpt-5-mini
+scoring:
+  # Routing is a yes/no decision, so every prompt grader here uses
+  # `scoring: binary` (0 or 1) rather than vally's default scale_1_5. Under
+  # scale_1_5 an "adequate" 3/5 answer normalises to 0.5 — below this eval's
+  # 0.7 per-trial gate — so a correctly routed response could still fail the
+  # trial. Binary scoring makes the grader verdict ("did it route correctly?")
+  # match the trial gate. Each stimulus is then scored by the weighted share of
+  # graders that pass and gated on the aggregate (>= threshold); genuine
+  # regressions still drag the aggregate below the bar.
+  threshold: 0.7
+environment:
+  # vally 0.8.0 loads no skills unless declared here (paths resolve relative to
+  # this eval file). The router fans out to every sub-skill (see SKILL.md
+  # INVOKES:), so routing stimuli need the full set present to choose among them.
+  skills:
+    - ../../aspire
+    - ../../aspire-init
+    - ../../aspireify
+    - ../../aspire-orchestration
+    - ../../aspire-deployment
+    - ../../aspire-monitoring
+stimuli:
+  - name: router-init-001
+    prompt: I want better AI agent support for my Aspire project
+    tags:
+      priority: p1
+      area: recommendation
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: recommends_agent_init
+        config:
+          scoring: binary
+          prompt: Does the assistant's response recommend running 'aspire agent init' (or an equivalent
+            command to generate project-local Aspire agent skills)? Answer based on the intent, not
+            exact string matching.
+      - type: prompt
+        name: explains_value
+        config:
+          scoring: binary
+          prompt: The assistant's response should recommend running 'aspire agent init' to generate
+            project-local skills with richer, scenario-based guidance. It should mention that this
+            provides deeper coverage for C# AppHost editing, TypeScript AppHosts, and investigation
+            workflows.
+      - type: output-contains
+        config:
+          substring: aspire agent init
+  - name: router-reject-001
+    prompt: How do I run my .NET console app?
+    tags:
+      priority: p1
+      area: routing
+    environment:
+      files:
+        - src: ../../../evals/non-aspire/MyApp/MyApp.csproj
+          dest: non-aspire/MyApp/MyApp.csproj
+        - src: ../../../evals/non-aspire/MyApp/Program.cs
+          dest: non-aspire/MyApp/Program.cs
+    graders:
+      - type: prompt
+        name: uses_dotnet_not_aspire
+        config:
+          scoring: binary
+          prompt: The assistant's response should recognize this is a standard .NET project (no
+            Aspire.AppHost.Sdk) and suggest 'dotnet run' rather than 'aspire start'. Aspire-specific
+            guardrails should not be applied to a non-Aspire project. Answer based on intent.
+      - type: output-contains
+        config:
+          substring: dotnet run
+        name: allows_dotnet_run
+      - type: output-not-contains
+        config:
+          substring: aspire start
+        name: no_aspire_commands
+      - type: output-not-contains
+        config:
+          substring: aspire run
+  - name: router-azdiag-001
+    prompt: My Aspire app is deployed to Azure and users are reporting errors. Help me investigate.
+    tags:
+      priority: p0
+      area: routing
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: routes_to_azure_diagnostics
+        config:
+          scoring: binary
+          prompt: The assistant's response should recognize this is a deployed app and route to
+            azure-diagnostics or platform-specific tools. It should explain that Aspire CLI cannot
+            connect to deployed apps (local backchannel only). Answer based on intent.
+      - type: output-not-contains
+        config:
+          substring: aspire logs
+        name: no_local_aspire_for_deployed
+      - type: output-not-contains
+        config:
+          substring: aspire describe
+  - name: router-deploy-001
+    prompt: I'm ready to push my Aspire app to production on Azure
+    tags:
+      priority: p0
+      area: routing
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: routes_to_deployment
+        config:
+          scoring: binary
+          prompt: "The assistant's response should route this to aspire-deployment concerns: using 'aspire
+            deploy' for production deployment. Answer based on intent."
+      - type: prompt
+        name: uses_aspire_deploy
+        config:
+          scoring: binary
+          prompt: Does the assistant's response recommend using 'aspire deploy' (or an equivalent Aspire CLI
+            deployment command) for production deployment? Answer based on the intent, not exact
+            string matching.
+      - type: output-not-contains
+        config:
+          substring: azd up
+        name: no_azd
+      - type: output-not-contains
+        config:
+          substring: azd deploy
+      - type: output-not-contains
+        config:
+          substring: azd init
+      - type: output-not-contains
+        config:
+          substring: azd provision
+      - type: output-not-contains
+        config:
+          substring: azure-prepare
+        name: no_azure_skills
+      - type: output-not-contains
+        config:
+          substring: azure-deploy
+      - type: output-contains
+        config:
+          substring: aspire deploy
+  - name: router-mon-001
+    # Question phrasing for the routing check: the prior "show me what's happening" wording led
+    # the executor to actually run the AppHost and probe live, timing out the trial. The grader
+    # only checks that the response routes to aspire-monitoring, so asking how to see what's
+    # happening preserves the routing signal without launching the app.
+    prompt: Something is wrong with my app. How do I see what's happening?
+    tags:
+      priority: p0
+      area: routing
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: routes_to_monitoring
+        config:
+          scoring: binary
+          prompt: "The assistant's response should route this to aspire-monitoring concerns: suggesting
+            'aspire describe' for state, 'aspire otel logs' or 'aspire logs' for diagnostics. It
+            should suggest investigation before code changes."
+      - type: output-contains
+        config:
+          substring: aspire
+  - name: router-orch-001
+    prompt: I need to start my Aspire app and wait for the database to be ready
+    tags:
+      priority: p0
+      area: routing
+    environment:
+      files:
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+          dest: csharp-apphost/MyApp.AppHost/MyApp.AppHost.csproj
+        - src: ../../../evals/csharp-apphost/MyApp.AppHost/Program.cs
+          dest: csharp-apphost/MyApp.AppHost/Program.cs
+        - src: ../../../evals/csharp-apphost/aspire.config.json
+          dest: csharp-apphost/aspire.config.json
+    graders:
+      - type: prompt
+        name: routes_correctly
+        config:
+          scoring: binary
+          prompt: "The assistant's response should route this to aspire-orchestration concerns: using 'aspire
+            start' to launch and 'aspire wait' for resource readiness as the primary action. Answer
+            based on intent."
+      - type: prompt
+        name: correct_commands
+        config:
+          scoring: binary
+          prompt: Does the assistant's response recommend using 'aspire start' to launch the application and
+            'aspire wait' (or an equivalent readiness-check command) for resource readiness? Answer
+            based on the intent, not exact string matching.
+      - type: output-contains
+        config:
+          substring: aspire start
+      - type: output-contains
+        config:
+          substring: aspire wait
+  # Positive-routing stimuli assert both activation and outcome. Because this
+  # spec tests the top-level router, model knowledge that merely produces an
+  # Aspire-flavored answer is insufficient: `constraints.expect_skills` requires
+  # an actual `aspire` activation, while the prompt grader checks the workflow.
+  # The complementary should_not_trigger stimuli use skill-invocation
+  # `disallowed` to guard against over-triggering.
+  - name: should_trigger_01
+    description: "Reason: Direct aspire CLI invocation"
+    # Phrased as a "how do I" question: an imperative "Run aspire start" makes the
+    # agent execute `aspire start` — a foreground daemon that never returns — so the
+    # eval executor times out waiting for session.idle (an errored trial hard-fails
+    # the eval). The grader accepts explaining the command, so the engagement intent
+    # is unchanged.
+    prompt: How do I run my AppHost with aspire start?
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_start
+        config:
+          scoring: binary
+          prompt: The user asked to run 'aspire start' on their AppHost. A correct response recognizes
+            this as an Aspire task and engages the aspire start workflow — running or explaining the
+            `aspire start` command against the AppHost (for example detecting the AppHost and using a
+            non-interactive flag). It should not treat this as a generic 'dotnet run' task or refuse.
+            Answer based on intent.
+  - name: should_trigger_02
+    description: "Reason: Aspire deployment lifecycle"
+    prompt: Deploy my Aspire distributed app
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_deploy
+        config:
+          scoring: binary
+          prompt: The user asked to deploy their Aspire distributed app. A correct response engages the
+            Aspire deployment workflow — explaining or running `aspire deploy` (and related publish
+            steps) rather than reaching for raw azd or treating it as a non-Aspire deployment. Answer
+            based on intent.
+  - name: should_trigger_03
+    description: "Reason: Aspire monitoring"
+    prompt: Check the aspire logs from my AppHost resources
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_diagnostics
+        config:
+          scoring: binary
+          prompt: The user asked to check the aspire logs for their AppHost resources. A correct response
+            engages Aspire diagnostics — using `aspire logs`, `aspire describe`, or OTEL/structured logs
+            to inspect resource state and output — rather than treating it as a generic logging task.
+            Answer based on intent.
+  - name: should_trigger_04
+    description: "Reason: AppHost detection via SDK reference"
+    prompt: I have an Aspire.AppHost.Sdk project — how do I run it?
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_run
+        config:
+          scoring: binary
+          prompt: The user has an Aspire.AppHost.Sdk project and asks how to run it. A correct response
+            recognizes this as an Aspire AppHost and explains running it with the aspire CLI (`aspire run`
+            or `aspire start`) rather than recommending a plain `dotnet run`. Answer based on intent.
+  - name: should_trigger_05
+    description: "Reason: Direct aspire CLI reference"
+    prompt: How do I use the aspire CLI?
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: provides_aspire_cli_guidance
+        config:
+          scoring: binary
+          prompt: The user asked how to use the aspire CLI. A correct response provides Aspire CLI guidance
+            (commands such as `aspire start`, `aspire run`, `aspire add`, or `aspire deploy`) rather than
+            treating the request as unrelated to Aspire. Answer based on intent.
+  - name: should_trigger_06
+    description: "Reason: Cloud-native integration is the Aspire workflow"
+    prompt: Add Redis to my cloud-native Aspire app
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_integration_wiring
+        config:
+          scoring: binary
+          prompt: The user asked to add Redis to their cloud-native Aspire app. A correct response engages
+            the Aspire integration-wiring workflow — adding a Redis resource to the AppHost model (for
+            example AddRedis and referencing it from a project) rather than hand-rolling a raw Redis client
+            with no AppHost wiring. Answer based on intent.
+  - name: should_trigger_07
+    description: "Reason: TypeScript AppHost detection"
+    prompt: My apphost.ts file needs updating
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_typescript_apphost
+        config:
+          scoring: binary
+          prompt: The user said their apphost.ts file needs updating. A correct response recognizes apphost.ts
+            as a TypeScript Aspire AppHost and engages with editing it — opening or locating the file, or
+            asking for its path/contents when it is not present — rather than treating apphost.ts as a
+            generic TypeScript file unrelated to Aspire. Answer based on intent.
+  - name: should_trigger_08
+    description: "Reason: Direct aspire CLI command"
+    # Question phrasing: an imperative makes the executor install then run `aspire
+    # doctor`, blocking the trial to timeout; the grader accepts explaining, so
+    # routing intent is unchanged.
+    prompt: How do I run aspire doctor to check my setup?
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_doctor
+        config:
+          scoring: binary
+          prompt: The user asked to run 'aspire doctor' to check their setup. A correct response engages that
+            Aspire workflow — running or explaining `aspire doctor` to diagnose the environment — rather
+            than refusing or treating it as unrelated to Aspire. Answer based on intent.
+  - name: should_trigger_09
+    description: "Reason: aspire init is part of the Aspire workflow"
+    # Question phrasing: an imperative makes the executor run interactive `aspire
+    # init`, which blocks and times out the trial; the grader accepts explaining, so
+    # routing intent is unchanged.
+    prompt: How do I run aspire init to add Aspire to this repo?
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_init
+        config:
+          scoring: binary
+          prompt: The user asked to run 'aspire init' to add Aspire to the repo. A correct response engages
+            that Aspire workflow — running or explaining `aspire init` to scaffold Aspire into the
+            repository — rather than refusing or treating it as unrelated to Aspire. Answer based on intent.
+  - name: should_trigger_10
+    description: "Reason: aspire destroy is part of the Aspire workflow"
+    # Phrased as a "how do I" question: an imperative "Run aspire destroy" makes the
+    # agent execute an interactive command that blocks on a confirmation prompt and
+    # times out (an errored trial hard-fails the eval). The grader accepts explaining
+    # the command, so the engagement intent is unchanged.
+    prompt: How do I run aspire destroy to tear down my deployment?
+    tags:
+      priority: p1
+      area: routing
+    constraints:
+      expect_skills:
+        - aspire
+    graders:
+      - type: prompt
+        name: engages_aspire_destroy
+        config:
+          scoring: binary
+          prompt: The user asked to run 'aspire destroy' to tear down their deployment. A correct response
+            engages that Aspire workflow — running or explaining `aspire destroy` to tear down the deployed
+            resources — rather than refusing or treating it as unrelated to Aspire. Answer based on intent.
+  - name: should_not_trigger_01
+    description: "Reason: Non-Aspire project"
+    prompt: Build my React frontend
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire
+        config:
+          disallowed:
+            - aspire
+  - name: should_not_trigger_02
+    description: "Reason: Azure infra without Aspire"
+    prompt: Create an Azure VM
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire
+        config:
+          disallowed:
+            - aspire
+  - name: should_not_trigger_03
+    description: "Reason: Unrelated technology"
+    prompt: Write Python unit tests
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire
+        config:
+          disallowed:
+            - aspire
+  - name: should_not_trigger_04
+    description: "Reason: K8s without Aspire context"
+    prompt: Set up a Kubernetes cluster from scratch
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire
+        config:
+          disallowed:
+            - aspire
+  - name: should_not_trigger_05
+    description: "Reason: Completely unrelated"
+    prompt: What's the weather like?
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire
+        config:
+          disallowed:
+            - aspire
+  - name: should_not_trigger_06
+    description: "Reason: Docker without Aspire context"
+    prompt: Help me with my Docker Compose file
+    tags:
+      priority: p1
+      area: routing
+    graders:
+      - type: skill-invocation
+        name: does_not_invoke_aspire
+        config:
+          disallowed:
+            - aspire
